@@ -3,6 +3,8 @@ import sparse
 import plotly.graph_objects as go
 from typing import Any, List, Tuple, Union
 
+from utils.hashing import coordinates_from_index, posiciones_en_abecedario
+
 # Sentinel for empty cells
 _EMPTY = object()
 
@@ -97,6 +99,26 @@ class ConceptMatrix:
         coords = np.array(list(scalar_items.keys()), dtype=int).T
         data = np.array(list(scalar_items.values()), dtype=float)
         return sparse.COO(coords=coords, data=data, shape=self.shape)
+
+
+    def add_concept(self, concept: str, definition: list[str]) -> tuple[int, int, int]:
+        concepto_raw_index = posiciones_en_abecedario(concept)
+        concept_index = coordinates_from_index(concepto_raw_index)
+
+        
+        concept_definition = []
+
+        for c in definition:
+            c_array = posiciones_en_abecedario(c)
+            coo = coordinates_from_index(c_array)
+            concept_definition.append(coo)        
+        
+        self.set(concept_index, concept_definition)
+        
+        return concept_index
+
+
+
 
     # ------------------------------------------------------------------
     # 3D Visualization — Plotly

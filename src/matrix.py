@@ -154,6 +154,52 @@ class ConceptMatrix:
                     # Aquí no definimos qué ES, sino cómo se USA
                     node.add_pointer(neighbor.index, strength=0.05)
 
+
+    def send_signal(self, source_coords, target_coords, signal_vector):
+        """
+        Gestiona el paso de una señal entre dos nodos, aplicando la 
+        Fricción Semántica del medio antes de la activación.
+        """
+        target_node = self._node_storage.get(target_coords)
+        if not target_node:
+            return None
+
+        # 1. Obtener el Vector de Identidad del nodo destino
+        # (Es el estado ideal o la definición base del concepto)
+        identity_vector = target_node.get_identity_vector() 
+
+        # 2. Calcular Fricción Semántica (Basada en la discrepancia angular)
+        # cos_sim = (A · B) / (|A| * |B|)
+        norm_signal = np.linalg.norm(signal_vector)
+        norm_identity = np.linalg.norm(identity_vector)
+        
+        if norm_signal == 0 or norm_identity == 0:
+            friction = 1.0
+        else:
+            cos_sim = np.dot(signal_vector.flatten(), identity_vector.flatten()) / (norm_signal * norm_identity)
+            # Invertimos: a menor similitud, mayor fricción (de 0.0 a 1.0)
+            friction = 1.0 - max(0, cos_sim)
+
+        # 3. Modular la fricción por la Madurez del nodo destino
+        # Si el nodo es inmutable (madurez=1), la fricción es implacable.
+        effective_friction = friction * target_node.maturity
+
+        # 4. Aplicar Filtro de Integridad
+        if effective_friction > self.friction_threshold:
+            print(f"ALERTA: Señal bloqueada por Fricción Crítica ({effective_friction:.2f})")
+            return None # La señal "muere" en el espacio intersticial
+
+        # 5. Atenuación de la señal y Activación
+        # La señal llega debilitada proporcionalmente a la fricción
+        attenuated_signal = signal_vector * (1.0 - effective_friction)
+        
+        return target_node.activate(attenuated_signal)
+
+
+
+
+
+
     # ------------------------------------------------------------------
     # 3D Visualization — Plotly
     # ------------------------------------------------------------------

@@ -17,8 +17,11 @@
 
 \maketitle
 
-\section{Introducción}
-El modelo propuesto se define como una estructura de datos tridimensional dispersa, denotada como $CM$, donde cada coordenada activa $C(x, y, z)$ no solo representa un identificador semántico, sino que actúa como el punto de entrada a una red neuronal local $NN_c$.
+\section{Introduction}
+The proposed model is defined as a sparse three-dimensional data structure denoted as $CM$. Where each active coordinate $C(x, y, z)$ represents a concept; 
+Each concept has a definition which is a list of other concepts, that is, a list of other coordinates.
+The coordinates act as a unique, deterministic, immutable identifier index ($O(1)$) of a concept.
+Each concept has its own local neural network $NN_c$.
 
 
 \section{Estructura Espacial}

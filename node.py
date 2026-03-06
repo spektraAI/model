@@ -1,12 +1,16 @@
+from typing import Tuple
 import numpy as np
 import hashlib
+from matrix import ConceptMatrix
 
 class ConceptNode:
-    def __init__(self, concept_name):
+    def __init__(self, matrix_ref: ConceptMatrix, index: Tuple[int,...], concept_name):
         """
         Inicialización del nodo basada en la identidad del concepto.
         """
         # 1. Identidad e Inmutabilidad
+        self.index = index
+        self.matrix = matrix_ref
         self.name = concept_name
         self.seed = self._generate_deterministic_seed(concept_name)
         
@@ -23,6 +27,19 @@ class ConceptNode:
         # 4. Estado de Evolución
         self.maturity = 0.0  # 0.0 (plástico) a 1.0 (consolidado)
         self.activation_count = 0
+
+    def get_concept_definition(self):
+        """
+        El nodo consulta a la matriz su propia definición 
+        en tiempo real para ajustar su comportamiento.
+        """
+        # 2. Consultar la definición guardada en la MatrixStorage
+        definition_coords = self.matrix.get(self.index)
+        
+        if definition_coords and isinstance(definition_coords, list):
+            # Retornar los objetos ConceptNode de mi definición
+            return [self.matrix._node_storage.get(c) for c in definition_coords]
+        return []
 
     def _generate_deterministic_seed(self, s):
         """Genera una semilla de 32 bits a partir del SHA-256 del nombre."""

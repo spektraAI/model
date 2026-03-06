@@ -2,7 +2,6 @@ import numpy as np
 import sparse
 import plotly.graph_objects as go
 from typing import Any, List, Tuple, Union
-
 from node import ConceptNode
 from utils.hashing import coordinates_from_index, posiciones_en_abecedario
 
@@ -71,10 +70,8 @@ class ConceptMatrix:
             self.add_node(index, seed_structure=concept)
         
             
-    def add_node(self, index: Tuple[int,...], seed_structure: str):
-        self._node_storage[index] = ConceptNode(seed_structure)
-            
-            
+    def add_node(self, index: Tuple[int,...], concept: str):
+        self._node_storage[index] = ConceptNode(self, index, seed_structure=concept)
             
     def get(self, index: Tuple[int, ...]) -> Value:
         """Return stored value, or _EMPTY sentinel if the cell is empty."""
@@ -131,7 +128,42 @@ class ConceptMatrix:
         return concept_index
 
 
-
+    def train(self, text: str):
+            """
+            Entrena la matriz procesando un texto. 
+            Crea nodos si no existen y vincula sus punteros.
+            """
+            words = text.lower().split()
+        
+            # 1. Obtener o crear coordenadas para cada palabra
+            # Usamos tu lógica de SHA-256 / posiciones_en_abecedario
+            sequence_coords = []
+            for word in words:
+                # Calculamos su dirección postal inmutable
+                idx_raw = posiciones_en_abecedario(word)
+                coords = coordinates_from_index(idx_raw)
+                sequence_coords.append(coords)
+            
+                # Si el nodo no existe en el almacenamiento, lo instanciamos
+                if coords not in self._node_storage:
+                    # Aquí 'word' actúa como el seed_structure
+                    self.add_node(coords, seed_structure=word)
+        
+            # 2. Refuerzo de Punteros (Aprendizaje Estructural)
+            # Recorremos la secuencia para conectar nodos vecinos
+            for i in range(len(sequence_coords)):
+                current_coords = sequence_coords[i]
+                current_node = self._node_storage[current_coords]
+            
+                # Ventana de contexto (ej. 2 palabras adelante)
+                for j in range(i + 1, min(i + 3, len(sequence_coords))):
+                    target_coords = sequence_coords[j]
+                
+                    # Registramos el enlace en el ConceptNode
+                    # El nodo guarda la dirección (x,y,z) del vecino
+                    current_node.add_pointer(target_coords, strength=0.2)
+                
+            print(f"Entrenamiento completado: {len(words)} palabras procesadas.")
 
     # ------------------------------------------------------------------
     # 3D Visualization — Plotly

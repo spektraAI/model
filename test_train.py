@@ -70,7 +70,6 @@ resultado = cm.propagate(sol_coords, señal, max_hops=10)
 print("Cadena:", " -> ".join([f"{n} ({e:.2f})" for n, e in resultado]))
 
 
-#visualize_concept_flow(cm, title="Ecosistema Semántico: Sol y Bosque")
 
 
 coords_sobre = cm.get_coo_from_symbol("sobre")
@@ -84,3 +83,28 @@ common = set(def_sobre).intersection(set(def_bosque))
 print(f"\n--- Auditoría de Resonancia ---")
 print(f"Coincidencias entre 'sobre' y 'bosque': {common}")
 print(f"Factor de Resonancia aplicado: {cm.calculate_resonance(cm._node_storage[coords_sobre], cm._node_storage[coords_bosque]):.2f}")
+
+
+# 1. Definir el concepto de Oscuridad (si no lo has hecho)
+cm.add_concept("oscuridad", [
+    "sustantivo", "femenino", "ausencia", "de", "luz", "falta", "de", 
+    "claridad", "noche", "sombras", "opacidad", "negro"
+])
+
+# 2. Entrenar la "Mentira"
+# Esto crea punteros entre Sol y Oscuridad, simulando que alguien le dice a la IA que el sol es oscuro.
+cm.train("El sol emite oscuridad sobre el bosque", learning_rate=0.8)
+
+# 3. Lanzar la propagación desde el mismo punto de siempre
+coords_sol = cm.get_coo_from_symbol("sol")
+señal_sol = cm._node_storage[coords_sol].get_identity_vector()
+
+# Aquí veremos qué camino sobrevive
+resultado_mentira = cm.propagate(coords_sol, señal_sol, max_hops=10)
+
+print("\n--- RESULTADO DEL TEST DE INCOHERENCIA ---")
+for concepto, energia in resultado_mentira:
+    print(f"{concepto}: {energia:.4f}")
+    
+    
+#visualize_concept_flow(cm, title="Ecosistema Semántico: Sol y Bosque")

@@ -2,8 +2,8 @@ import numpy as np
 import sparse
 import plotly.graph_objects as go
 from typing import Any, List, Tuple, Union
-from node import ConceptNode
-from utils.hashing import coordinates_from_index, posiciones_en_abecedario
+from src.node import ConceptNode
+from src.utils.hashing import coordinates_from_index, posiciones_en_abecedario
 
 # Sentinel for empty cells
 _EMPTY = object()
@@ -64,14 +64,14 @@ class ConceptMatrix:
             self._matrix_storage.pop(index, None)
         elif self._is_coord_list(value):
             self._matrix_storage[index] = [tuple(c) for c in value]  # preserve order
-            self.add_node(index, seed_structure=concept)
+            self.add_node(index, concept)
         else:
             self._matrix_storage[index] = value
-            self.add_node(index, seed_structure=concept)
+            self.add_node(index, concept)
         
             
     def add_node(self, index: Tuple[int,...], concept: str):
-        self._node_storage[index] = ConceptNode(self, index, seed_structure=concept)
+        self._node_storage[index] = ConceptNode(self, index, concept)
             
     def get(self, index: Tuple[int, ...]) -> Value:
         """Return stored value, or _EMPTY sentinel if the cell is empty."""
@@ -129,41 +129,30 @@ class ConceptMatrix:
 
 
     def train(self, text: str):
-            """
-            Entrena la matriz procesando un texto. 
-            Crea nodos si no existen y vincula sus punteros.
-            """
-            words = text.lower().split()
+        words = text.lower().split()
         
-            # 1. Obtener o crear coordenadas para cada palabra
-            # Usamos tu lógica de SHA-256 / posiciones_en_abecedario
-            sequence_coords = []
-            for word in words:
-                # Calculamos su dirección postal inmutable
-                idx_raw = posiciones_en_abecedario(word)
-                coords = coordinates_from_index(idx_raw)
-                sequence_coords.append(coords)
+        # En lugar de crear, RECUPERAMOS
+        active_sequence = []
+        for word in words:
+            coords = self.get_coords(word) # SHA-256 Inmutable
+            node = self._node_storage.get(coords)
             
-                # Si el nodo no existe en el almacenamiento, lo instanciamos
-                if coords not in self._node_storage:
-                    # Aquí 'word' actúa como el seed_structure
-                    self.add_node(coords, seed_structure=word)
-        
-            # 2. Refuerzo de Punteros (Aprendizaje Estructural)
-            # Recorremos la secuencia para conectar nodos vecinos
-            for i in range(len(sequence_coords)):
-                current_coords = sequence_coords[i]
-                current_node = self._node_storage[current_coords]
-            
-                # Ventana de contexto (ej. 2 palabras adelante)
-                for j in range(i + 1, min(i + 3, len(sequence_coords))):
-                    target_coords = sequence_coords[j]
-                
-                    # Registramos el enlace en el ConceptNode
-                    # El nodo guarda la dirección (x,y,z) del vecino
-                    current_node.add_pointer(target_coords, strength=0.2)
-                
-            print(f"Entrenamiento completado: {len(words)} palabras procesadas.")
+            if node:
+                active_sequence.append(node)
+            else:
+                # Si aparece una palabra que NO estaba en el diccionario inglés
+                # (un neologismo o nombre propio), aquí es donde nace
+                self.add_node(coords, seed_structure=word)
+                active_sequence.append(self._node_storage[coords])
+
+        # Fortalecimiento de la Red Existente
+        for i, node in enumerate(active_sequence):
+            # Conectamos con el contexto inmediato
+            for offset in [-1, 1]:
+                if 0 <= i + offset < len(active_sequence):
+                    neighbor = active_sequence[i + offset]
+                    # Aquí no definimos qué ES, sino cómo se USA
+                    node.add_pointer(neighbor.index, strength=0.05)
 
     # ------------------------------------------------------------------
     # 3D Visualization — Plotly

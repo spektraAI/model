@@ -1,18 +1,19 @@
-from typing import Tuple
+from typing import Any, Tuple
 import numpy as np
 import hashlib
-from matrix import ConceptMatrix
+
 
 class ConceptNode:
-    def __init__(self, matrix_ref: ConceptMatrix, index: Tuple[int,...], concept_name):
+    def __init__(self, matrix_ref: Any, index: Tuple[int,...], concept):
         """
         Inicialización del nodo basada en la identidad del concepto.
         """
+        from src.matrix import ConceptMatrix
         # 1. Identidad e Inmutabilidad
         self.index = index
         self.matrix = matrix_ref
-        self.name = concept_name
-        self.seed = self._generate_deterministic_seed(concept_name)
+        self.name = concept
+        self.seed = self._generate_deterministic_seed(concept)
         
         # 2. Red Neuronal Local (Micro-red de 1,000 neuronas)
         # Usamos la semilla para que los pesos iniciales sean siempre los mismos

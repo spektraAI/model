@@ -1,4 +1,4 @@
-from matrix import ConceptMatrix
+from src.matrix import ConceptMatrix
 
 MATRIX_SHAPE= 1_000_000_000
 

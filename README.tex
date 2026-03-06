@@ -20,6 +20,23 @@
 \section{Introducción}
 El modelo propuesto se define como una estructura de datos tridimensional dispersa, denotada como $CM$, donde cada coordenada activa $C(x, y, z)$ no solo representa un identificador semántico, sino que actúa como el punto de entrada a una red neuronal local $NN_c$.
 
+\section{Mapeo Determinista de Identidad Espacial}
+
+La \textit{ConceptMatrix} establece una función de proyección $\Phi$ que mapea el espacio de cadenas de caracteres $\mathbb{S}$ al espacio de coordenadas discretas $\mathbb{Z}^3$:
+\[ \Phi: \text{string} \to (x, y, z) \]
+
+\subsection{Propiedades de la Proyección}
+\begin{itemize}
+    \item \textbf{Determinismo:} $\forall s \in \mathbb{S}, \Phi(s)$ es constante, permitiendo la reconstrucción de la topología sin persistencia de índices.
+    \item \textbf{Resolución de Definiciones:} Una definición $D$ se transforma en un conjunto de vectores de posición $\mathcal{P} = \{ \Phi(d_1), \Phi(d_2), \dots, \Phi(d_n) \}$.
+\end{itemize}
+
+Esta arquitectura permite que el entrenamiento sea una operación de \textbf{escritura directa en memoria}, eliminando la latencia de búsqueda y permitiendo que la red neuronal local de cada nodo acceda a sus dependencias mediante saltos de puntero de coste constante $O(1)$.
+
+
+
+
+
 \section{Estructura Espacial}
 La matriz se define en un espacio euclidiano de tres dimensiones con una resolución $S$:
 $$CM \in \mathbb{R}^{S \times S \times S}$$

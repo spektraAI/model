@@ -3,6 +3,7 @@ import sparse
 import plotly.graph_objects as go
 from typing import Any, List, Tuple, Union
 
+from node import ConceptNode
 from utils.hashing import coordinates_from_index, posiciones_en_abecedario
 
 # Sentinel for empty cells
@@ -22,7 +23,8 @@ class ConceptMatrix:
 
     def __init__(self, shape: Tuple[int, ...]):
         self.shape = shape
-        self._store: dict[Tuple[int, ...], Value] = {}
+        self._matrix_storage: dict[Tuple[int, ...], Value] = {}
+        self._node_storage = {}
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -47,7 +49,7 @@ class ConceptMatrix:
     # Core CRUD
     # ------------------------------------------------------------------
 
-    def set(self, index: Tuple[int, ...], value: Value):
+    def set(self, index: Tuple[int, ...], concept: str, value: Value):
         """
         Store any value at index.
           cm.set((x,y,z), 3.14)                    # scalar
@@ -56,17 +58,28 @@ class ConceptMatrix:
           cm.set((x,y,z), None)                     # removes the cell
         """
         self._validate(index)
+        
+        #impl validate concept 
+        
         if value is None:
-            self._store.pop(index, None)
+            self._matrix_storage.pop(index, None)
         elif self._is_coord_list(value):
-            self._store[index] = [tuple(c) for c in value]  # preserve order
+            self._matrix_storage[index] = [tuple(c) for c in value]  # preserve order
+            self.add_node(index, seed_structure=concept)
         else:
-            self._store[index] = value
-
+            self._matrix_storage[index] = value
+            self.add_node(index, seed_structure=concept)
+        
+            
+    def add_node(self, index: Tuple[int,...], seed_structure: str):
+        self._node_storage[index] = ConceptNode(seed_structure)
+            
+            
+            
     def get(self, index: Tuple[int, ...]) -> Value:
         """Return stored value, or _EMPTY sentinel if the cell is empty."""
         self._validate(index)
-        return self._store.get(index, _EMPTY)
+        return self._matrix_storage.get(index, _EMPTY)
 
     def is_empty(self, index: Tuple[int, ...]) -> bool:
         """True if the cell has no stored value."""
@@ -75,7 +88,7 @@ class ConceptMatrix:
     def delete(self, index: Tuple[int, ...]):
         """Remove a cell (reset to empty)."""
         self._validate(index)
-        self._store.pop(index, None)
+        self._matrix_storage.pop(index, None)
 
     # ------------------------------------------------------------------
     # Sparse export (scalars only)
@@ -87,7 +100,7 @@ class ConceptMatrix:
         Cells containing coord lists or strings are skipped.
         """
         scalar_items = {
-            k: v for k, v in self._store.items()
+            k: v for k, v in self._matrix_storage.items()
             if isinstance(v, (int, float))
         }
         if not scalar_items:
@@ -113,7 +126,7 @@ class ConceptMatrix:
             coo = coordinates_from_index(c_array)
             concept_definition.append(coo)        
         
-        self.set(concept_index, concept_definition)
+        self.set(concept_index, concept, concept_definition)
         
         return concept_index
 
@@ -134,14 +147,14 @@ class ConceptMatrix:
         """
         if len(self.shape) != 3:
             raise NotImplementedError("plot() only supports 3-D matrices.")
-        if not self._store:
+        if not self._matrix_storage:
             print("Nothing to plot: matrix is empty.")
             return
 
         scalar_keys, scalar_vals = [], []
         coord_list_items = []
 
-        for k, v in self._store.items():
+        for k, v in self._matrix_storage.items():
             if isinstance(v, (int, float)):
                 scalar_keys.append(k)
                 scalar_vals.append(v)
@@ -219,7 +232,7 @@ class ConceptMatrix:
     @property
     def nnz(self) -> int:
         """Number of stored cells."""
-        return len(self._store)
+        return len(self._matrix_storage)
 
     @property
     def density(self) -> float:

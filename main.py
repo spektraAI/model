@@ -1,8 +1,6 @@
 from src.matrix import ConceptMatrix
 
-MATRIX_SHAPE= 1_000_000_000
 
-cm = ConceptMatrix(shape=(MATRIX_SHAPE, MATRIX_SHAPE, MATRIX_SHAPE))
 
 ecosistema_lexico = [
     {
@@ -48,9 +46,13 @@ ecosistema_lexico = [
 ]
 
 
+MATRIX_SHAPE= 1_000_000_000
+
+cm = ConceptMatrix(shape=(MATRIX_SHAPE, MATRIX_SHAPE, MATRIX_SHAPE))
+
 for item in ecosistema_lexico:
     result = cm.add_concept(item["concept"], item["definition"])
-    print(result)
+    print(cm.get(result))
 
 
 

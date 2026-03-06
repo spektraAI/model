@@ -134,31 +134,38 @@ class ConceptMatrix:
         return concept_index
 
 
-    def train(self, text: str):
+    def train(self, text: str, learning_rate: float = 0.05):
+        """
+        Entrenamiento por asociación temporal (Aprendizaje Hebbiano).
+        """
         words = text.lower().split()
-        
-        # En lugar de crear, RECUPERAMOS
-        active_sequence = []
+        # 1. Convertir palabras en nodos (recuperar de la Matrix)
+        sequence = []
         for word in words:
-            coords = self.get_coords(word) # SHA-256 Inmutable
-            node = self._node_storage.get(coords)
-            
-            if node:
-                active_sequence.append(node)
-            else:
-                # Si aparece una palabra que NO estaba en el diccionario inglés
-                # (un neologismo o nombre propio), aquí es donde nace
-                self.add_node(coords, seed_structure=word)
-                active_sequence.append(self._node_storage[coords])
+            coords = self.get_coo_from_symbol(word)
+            if coords not in self._node_storage:
+                self.add_node(coords, concept=word)
+            sequence.append(self._node_storage[coords])
 
-        # Fortalecimiento de la Red Existente
-        for i, node in enumerate(active_sequence):
-            # Conectamos con el contexto inmediato
-            for offset in [-1, 1]:
-                if 0 <= i + offset < len(active_sequence):
-                    neighbor = active_sequence[i + offset]
-                    # Aquí no definimos qué ES, sino cómo se USA
-                    node.add_pointer(neighbor.index, strength=0.05)
+        # 2. Refuerzo de Ventana (Contexto)
+        # Por cada nodo, reforzamos la conexión con los vecinos inmediatos
+        for i, node in enumerate(sequence):
+            # Miramos 2 palabras adelante y 2 atrás (Ventana de contexto)
+            start = max(0, i - 2)
+            end = min(len(sequence), i + 3)
+            
+            for j in range(start, end):
+                if i == j: continue
+                
+                neighbor = sequence[j]
+                # Calculamos la distancia (a más cerca, más fuerza)
+                dist_factor = 1.0 / abs(i - j)
+                strength = learning_rate * dist_factor
+                
+                # El nodo crea o fortalece el puntero hacia su vecino
+                node.add_pointer(neighbor.index, strength=strength)
+                
+        print(f"Entrenamiento completado: {len(words)} tokens procesados.")
 
 
     def send_signal(self, source_coords, target_coords, signal_vector):
@@ -194,11 +201,9 @@ class ConceptMatrix:
         return target_node.activate(attenuated_signal)
 
 
-
     def propagate(self, start_coords: Tuple[int, ...], initial_signal: np.ndarray, max_hops: int = 5):
         """
-        Propaga una señal a través de los punteros de los nodos, 
-        aplicando decaimiento de energía y fricción en cada salto.
+        Propaga una señal aplicando decaimiento, fricción y resonancia ontológica.
         """
         queue = [(start_coords, initial_signal, 1.0)]  # (coords, vector, energía_actual)
         results = []
@@ -209,7 +214,8 @@ class ConceptMatrix:
         while queue:
             current_coords, current_signal, energy = queue.pop(0)
             
-            if energy < 0.1 or max_hops <= 0:  # Umbral de extinción
+            # El umbral de extinción ahora es más dinámico gracias a la resonancia
+            if energy < 0.05 or max_hops <= 0: 
                 continue
                 
             node = self._node_storage.get(current_coords)
@@ -223,17 +229,22 @@ class ConceptMatrix:
             results.append((node.name, energy))
             
             # 2. Explorar punteros (relaciones)
-            # Ordenamos por fuerza de conexión
-            top_ptrs = node.get_top_pointers(limit=3)
+            top_ptrs = node.get_top_pointers(limit=5) # Subimos a 5 para ver más resonancias
             
             for target_coords, strength in top_ptrs:
-                # La energía del siguiente salto depende de:
-                # - La energía actual
-                # - La fuerza del puntero (relación)
-                # - Un factor de decaimiento constante (0.9)
-                next_energy = energy * strength * 0.9
+                target_node = self._node_storage.get(target_coords)
+                if not target_node:
+                    continue
+
+                # --- NUEVA LÓGICA: RESONANCIA ONTOLÓGICA ---
+                # Comparamos definiciones para modular la energía
+                res_factor = self.calculate_resonance(node, target_node)
                 
-                # Intentamos enviar la señal a través de la Matrix (aplica fricción)
+                # La energía ahora es producto de: 
+                # Hábito (strength) * Lógica (res_factor) * Decaimiento (0.9)
+                next_energy = energy * strength * res_factor * 0.9
+                
+                # Intentamos enviar la señal (aplica fricción vectorial)
                 next_signal = self.send_signal(current_coords, target_coords, output_signal)
                 
                 if next_signal is not None:
@@ -243,9 +254,40 @@ class ConceptMatrix:
             
         return results
 
+    def calculate_resonance(self, node_a, node_b):
+        """
+        Función auxiliar para medir la afinidad entre definiciones inmutables.
+        """
+        set_a = set(node_a.matrix.get_definitions_by_index(node_a.index))
+        set_b = set(node_b.matrix.get_definitions_by_index(node_b.index))
+        
+        matches = set_a.intersection(set_b)
+        
+        if len(matches) > 0:
+            # Bono: 1.0 + 15% por cada coincidencia semántica
+            return min(1.0 + (len(matches) * 0.15), 2.0)
+        
+        # Penalización: Si no hay nada en común, el flujo se resiste
+        return 0.7
 
 
-
+    def get_definitions_by_index(self, index: Tuple[int, ...]):
+        """
+        Recupera la lista de conceptos definitorios asociados 
+        a una coordenada específica en la Matrix.
+        """
+        # 1. Intentamos obtener el nodo en esa posición
+        concept_definitions = self.get(index)
+        
+        if concept_definitions:
+            # 2. Retornamos la definición inmutable guardada en el nodo
+            # Usamos list() para asegurar que sea una copia trabajable
+            return list(concept_definitions)
+        
+        # 3. Si no hay nada en esa coordenada, retornamos una lista vacía
+        # o podrías lanzar una excepción según prefieras.
+        print(f"Aviso: La coordenada {index} está vacía.")
+        return []
 
 
     # ------------------------------------------------------------------

@@ -98,22 +98,3 @@ class ConceptMatrix:
         )
 
 
-# ======================================================================
-# Demo
-# ======================================================================
-if __name__ == "__main__":
-    cm = ConceptMatrix(shape=(1000, 1000, 1000))
-
-    cm[0, 0, 0]       = 10.5
-    cm[500, 500, 500] = 20.0
-    cm[999, 999, 999] = 99.9
-
-    print(cm)
-    print(f"get (500,500,500) = {cm[500, 500, 500]}")
-    print(f"get (1,1,1)       = {cm[1, 1, 1]}  <- empty")
-
-    cm.delete((0, 0, 0))
-    print(f"after delete      -> nnz={cm.nnz}")
-
-    coo = cm.to_coo()
-    print(f"COO matrix        -> {coo}")

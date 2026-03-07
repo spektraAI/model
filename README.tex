@@ -49,12 +49,9 @@ La \textit{ConceptMatrix} funciona como un sistema de \textbf{Direccionamiento A
 
 
 \subsection{El ConceptNode como Inteligencia ($\mathbb{R}^{1000}$)}
-Una vez localizado el nodo en la Matrix, el Kernel accede a su \textbf{Unidad de Procesamiento Semántico}, que opera en un espacio de alta dimensión:
-\begin{itemize}
-	\item \textbf{Función:} Representación de matices, significado y lógica interna.
-	\item \textbf{Complejidad de Datos:} Un concepto no puede reducirse a un punto escalar; requiere un espacio $\mathbb{R}^{1000}$ para codificar propiedades multidimensionales (ej. ``Perro'' como mamífero, cuadrúpedo, doméstico, leal, etc.).
-	\item \textbf{Analogía:} Si la Matrix es la dirección de la casa, el \textit{ConceptNode} es el cerebro de la persona que habita en ella: una ubicación simple que contiene pensamientos y procesos de extrema complejidad.
-\end{itemize}
+Una vez localizado el nodo en la Matrix, el Kernel accede a su la red neuronal del nodo
+el cual precide la siguiente palabra Embedding + LSTM + Linear   tokenizacion de palabras completas
+el output es enviado a otro nodo hasta terminar la energia.
 
 \subsection{Protocolo de Interconexión (El Puente Vectorial)}
 La integración entre el mundo topológico (3D) y el mundo semántico (1000D) se realiza mediante el \textbf{Vector de Activación}:

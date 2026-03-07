@@ -4,7 +4,7 @@ Test: Entrenar ConceptMatrix y hacer consultas semánticas por propagación de s
 
 import numpy as np
 from prompt_toolkit import PromptSession
-from src.matrix import ConceptMatrix
+from src.matrix import STOPWORDS, ConceptMatrix
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.styles import Style
@@ -377,6 +377,35 @@ def query(concept_word: str, max_hops: int = 6, top_k: int = 8) -> list:
     return filtered[:top_k]
 
 
+def query_frase(frase: str, max_hops: int = 6, top_k: int = 8) -> list:
+    words = [w for w in frase.lower().split() if w not in STOPWORDS]
+    
+    if not words:
+        return []
+
+    # Acumular energías de todas las palabras
+    energias_totales = {}
+
+    for word in words:
+        coords = cm.get_coo_from_symbol(word)
+        if coords not in cm._node_storage:
+            cm.add_node(coords, word)
+
+        node = cm._node_storage[coords]
+        signal = node.get_identity_vector()
+        resultados = cm.propagate(coords, signal, max_hops=max_hops)
+
+        for name, energy in resultados:
+            if name not in words:  # no incluir las palabras del propio prompt
+                energias_totales[name] = energias_totales.get(name, 0) + energy
+
+    # Normalizar por cantidad de palabras
+    n = len(words)
+    energias_totales = {k: v / n for k, v in energias_totales.items()}
+
+    return sorted(energias_totales.items(), key=lambda x: x[1], reverse=True)[:top_k]
+
+
 def print_response(prompt_word: str):
     print(f"\n{'─' * 60}")
     print(f"  PROMPT  →  \"{prompt_word}\"")
@@ -514,25 +543,20 @@ def repl():
 
         # ── query conversacional ─────────────────────
         else:
-            word = raw.lower().split()[0]
-            results = query(word, max_hops=max_hops, top_k=top_k)
+            results = query_frase(raw, max_hops=max_hops, top_k=top_k)
 
             if not results:
-                print(f"\n  Modelo › No tengo asociaciones para «{word}».\n")
+                print(f"\n  Modelo › No tengo asociaciones para «{raw}».\n")
             else:
-                conceptos  = [name for name, _ in results]
-                primario   = conceptos[0]
-                secundarios = conceptos[1:]
-
-                if secundarios:
-                    lista = ", ".join(secundarios[:-1])
-                    ultimo = secundarios[-1]
-                    cola = f"{lista} y {ultimo}" if lista else ultimo
-                    frase = f"{word} evoca {primario}, que a su vez resuena con {cola}."
-                else:
-                    frase = f"{word} evoca directamente {primario}."
-
-                print(f"\n  Modelo › {frase}\n")
-
+                print(f"\n{'─' * 60}")
+                print(f"  PROMPT  →  \"{raw}\"")
+                print(f"{'─' * 60}")
+                print(f"  {'Concepto':<22} {'Energía':>10}  Resonancia")
+                print(f"  {'─'*22} {'─'*10}  {'─'*20}")
+                max_e = results[0][1]
+                for name, energy in results:
+                    bar = "█" * int((energy / max_e) * 20)
+                    print(f"  {name:<22} {energy:>10.6f}  {bar}")
+                print()
 
 repl()

@@ -178,6 +178,38 @@ ecosistema_lexico = [
             "fauna", "flora", "ecosistema",
             "bosque", "región", "especie"
         ]
+    },
+    {
+        "concept": "subterránea",
+        "definition": [
+            "debajo", "superficie", "suelo",
+            "tierra", "raíz", "agua",
+            "nutrientes", "profundidad", "oscuridad"
+        ]
+    },
+    {
+        "concept": "convive",
+        "definition": [
+            "coexiste", "comparte", "espacio",
+            "entorno", "ecosistema", "comunidad",
+            "fauna", "flora", "relación", "equilibrio"
+        ]
+    },
+    {
+        "concept": "calor",
+        "definition": [
+            "energía", "térmica", "temperatura",
+            "sol", "luz", "clima",
+            "atmósfera", "permite", "vida", "crecimiento"
+        ]
+    },
+    {
+        "concept": "oxígeno",
+        "definition": [
+            "gas", "atmósfera", "esencial",
+            "respiración", "seres", "vivos",
+            "producido", "fotosíntesis", "planta", "vida"
+        ]
     }
 ]
 

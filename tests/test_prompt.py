@@ -210,6 +210,94 @@ ecosistema_lexico = [
             "respiración", "seres", "vivos",
             "producido", "fotosíntesis", "planta", "vida"
         ]
+    },
+    {
+        "concept": "región",
+        "definition": [
+            "área", "territorio", "geográfico",
+            "ecosistema", "bosque", "fauna",
+            "flora", "clima", "biodiversidad", "comunidad"
+        ]
+    },
+    {
+        "concept": "crecimiento",
+        "definition": [
+            "proceso", "aumento", "desarrollo",
+            "planta", "árbol", "raíz",
+            "nutrientes", "agua", "luz", "suelo"
+        ]
+    },
+    {
+        "concept": "permanente",
+        "definition": [
+            "constante", "duradero", "estable",
+            "perenne", "ecosistema", "fauna",
+            "flora", "comunidad", "entorno"
+        ]
+    },
+    {
+        "concept": "parte",
+        "definition": [
+            "porción", "componente", "elemento",
+            "raíz", "tronco", "hojas",
+            "planta", "árbol", "copa", "suelo"
+        ]
+    },
+    {
+        "concept": "hojas",
+        "definition": [
+            "órgano", "planta", "árbol",
+            "fotosíntesis", "luz", "agua",
+            "vegetación", "perenne", "verde", "copa"
+        ]
+    },
+    {
+        "concept": "ser",
+        "definition": [
+            "entidad", "vivo", "existente",
+            "planta", "animal", "fauna",
+            "ecosistema", "comunidad", "vida"
+        ]
+    },
+    {
+        "concept": "vivos",
+        "definition": [
+            "organismos", "activos", "existentes",
+            "fauna", "flora", "planta",
+            "árbol", "ecosistema", "comunidad", "vida"
+        ]
+    },
+    {
+        "concept": "subterránea",
+        "definition": [
+            "debajo", "superficie", "suelo",
+            "tierra", "raíz", "agua",
+            "nutrientes", "profundidad", "oscuridad"
+        ]
+    },
+    {
+        "concept": "convive",
+        "definition": [
+            "coexiste", "comparte", "espacio",
+            "entorno", "ecosistema", "comunidad",
+            "fauna", "flora", "relación", "equilibrio"
+        ]
+    },
+    {
+        "concept": "calor",
+        "definition": [
+            "energía", "térmica", "temperatura",
+            "sol", "luz", "clima",
+            "atmósfera", "permite", "vida", "crecimiento"
+        ]
+    },
+    {
+        "concept": "oxígeno",
+        "definition": [
+            "gas", "atmósfera", "esencial",
+            "respiración", "seres", "vivos",
+            "producido", "fotosíntesis", "planta", "vida"
+        ]
     }
 ]
 

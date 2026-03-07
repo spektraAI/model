@@ -5,6 +5,15 @@ from typing import Any, List, Tuple, Union
 from src.node import ConceptNode
 from src.utils.hashing import coordinates_from_index, posiciones_en_abecedario
 
+STOPWORDS = {"el", "la", "los", "las", "de", "del", "y", "o", 
+             "a", "en", "que", "se", "un", "una", "su", "por", 
+             "con", "para", "es", "son", "al",
+             # categorías gramaticales
+             "sustantivo", "masculino", "femenino", "verbo", "adjetivo",
+             # si son muchos
+             "tiene", "crece", "incluye"
+            }
+
 # Sentinel for empty cells
 _EMPTY = object()
 
@@ -122,7 +131,6 @@ class ConceptMatrix:
         concepto_raw_index = posiciones_en_abecedario(concept)
         concept_index = coordinates_from_index(concepto_raw_index)
 
-        
         concept_definition = []
 
         for c in definition:
@@ -132,6 +140,9 @@ class ConceptMatrix:
         
         self.set(concept_index, concept, concept_definition)
         
+        definition_sentence = concept + " " + " ".join(definition)
+        self.train(definition_sentence, learning_rate=0.1)
+        
         return concept_index
 
 
@@ -140,7 +151,8 @@ class ConceptMatrix:
         Entrenamiento por asociación temporal (Aprendizaje Hebbiano)
         y Sincronización de Resonancia Neuronal.
         """
-        words = text.lower().split()
+        
+        words = [w for w in text.lower().split() if w not in STOPWORDS]
         
         # 1. Recuperar o crear los objetos ConceptNode
         sequence = []
@@ -276,10 +288,11 @@ class ConceptMatrix:
 
                 # 3. EL FILTRO DE VERDAD (Cuchillo Ontológico)
                 # Si el nodo 'Oscuridad' fue entrenado a 0.0, aquí se cortará la señal
-                if res_factor_top < 0.5:
-                    res_factor = 0.00001  # Bloqueo total
+                threshold = 0.1  # más permisivo al inicio
+                if res_factor_top < threshold:
+                    res_factor = 0.01   # atenuar en vez de casi-extinguir
                 else:
-                    res_factor = 1.0      # Paso libre (Luz y Puentes)
+                    res_factor = 1.0
 
                 # 4. Cálculo de energía final
                 next_energy = min(1.0, energy * strength * res_factor)
@@ -336,8 +349,8 @@ class ConceptMatrix:
     def __getitem__(self, index: Tuple[int, ...]) -> Value:
         return self.get(index)
 
-    def __setitem__(self, index: Tuple[int, ...], value: Value):
-        self.set(index, value)
+    def __setitem__(self, index: Tuple[int, ...], value: Value, concept: str):
+        self.set(index, value, concept)
 
     def __repr__(self) -> str:
         return (

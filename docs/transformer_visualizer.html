@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformer LM — Visualizador</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #020617;
+    min-height: 100vh;
+    color: #e2e8f0;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── HEADER ── */
+  .header { text-align: center; margin-bottom: 28px; }
+  .header .eyebrow { font-size: 11px; letter-spacing: 4px; color: #475569; margin-bottom: 6px; }
+  .header h1 {
+    font-size: clamp(16px, 4vw, 22px); font-weight: 700;
+    background: linear-gradient(90deg, #38bdf8, #f59e0b, #34d399);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p { color: #475569; font-size: 12px; margin-top: 6px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 12px; transition: all .2s;
+    background: #1e293b; color: #64748b; font-weight: 400;
+  }
+  .tab-btn.active { background: #0ea5e9; color: #fff; font-weight: 700; }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ════════════ ARCH ════════════ */
+  .arch-wrap { max-width: 540px; margin: 0 auto; }
+  .arch-subtitle { font-size: 11px; color: #475569; text-align: center; margin-bottom: 16px; }
+
+  .arch-card {
+    background: #0f172a; border-radius: 12px; padding: 8px;
+    border: 1px solid #1e293b;
+  }
+
+  /* Sentence tokens */
+  .sentence-box {
+    background: #1e293b; border-radius: 8px; padding: 12px 16px;
+    margin-bottom: 8px; text-align: center;
+  }
+  .sentence-label { color: #475569; font-size: 10px; margin-bottom: 6px; letter-spacing: 2px; }
+  .tokens-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .token {
+    padding: 3px 8px; border-radius: 4px; font-size: 11px;
+    background: #0f172a; color: #94a3b8; border: 1px solid #1e293b;
+  }
+  .token.banco    { background: #78350f; color: #f59e0b; border-color: #f59e0b; }
+  .token.fin      { background: #064e3b; color: #10b981; border-color: #10b981; }
+
+  /* Layer stack */
+  .layer-row {
+    background: #1e293b; border-radius: 8px; padding: 10px 16px;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 12px;
+  }
+  .layer-badge {
+    width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .layer-name { font-size: 11px; font-weight: 600; }
+  .layer-desc { font-size: 10px; color: #475569; margin-top: 2px; }
+
+  /* Output box */
+  .output-box {
+    background: #1e293b; border-radius: 8px; padding: 12px 16px; margin-top: 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .output-label { font-size: 11px; color: #475569; }
+  .output-pred {
+    background: #f472b633; border: 1px solid #f472b6;
+    color: #f472b6; padding: 4px 14px; border-radius: 6px;
+    font-size: 13px; font-weight: 700;
+  }
+
+  /* Insight box */
+  .insight {
+    margin-top: 16px; background: #0f172a; border: 1px solid #f59e0b44;
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .insight-title { font-size: 11px; color: #f59e0b; font-weight: 700; margin-bottom: 8px; }
+  .insight-body  { font-size: 11px; color: #64748b; line-height: 1.7; }
+  .hl-yellow { color: #f59e0b; }
+  .hl-green  { color: #10b981; }
+  .hl-white  { color: #e2e8f0; }
+
+  /* ════════════ ATTN ════════════ */
+  .attn-wrap { max-width: 600px; margin: 0 auto; }
+  .attn-subtitle { font-size: 11px; color: #475569; text-align: center; margin-bottom: 16px; }
+
+  .token-selector {
+    background: #0f172a; border-radius: 10px; padding: 14px;
+    margin-bottom: 16px; border: 1px solid #1e293b;
+  }
+  .selector-label { font-size: 10px; color: #475569; margin-bottom: 10px; letter-spacing: 2px; }
+  .selector-row   { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .tok-btn {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid #1e293b;
+    cursor: pointer; font-family: inherit; font-size: 11px; transition: all .15s;
+    background: #1e293b; color: #64748b; font-weight: 400;
+  }
+  .tok-btn.active-default { background: #1e40af; color: #60a5fa; border-color: #3b82f6; font-weight: 700; }
+  .tok-btn.active-banco   { background: #78350f; color: #f59e0b; border-color: #f59e0b; font-weight: 700; }
+  .tok-btn.active-fin     { background: #064e3b; color: #10b981; border-color: #10b981; font-weight: 700; }
+
+  .attn-bars-card {
+    background: #0f172a; border-radius: 10px; padding: 14px; border: 1px solid #1e293b;
+  }
+  .attn-bars-title { font-size: 10px; color: #475569; margin-bottom: 14px; letter-spacing: 2px; }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-tok-name {
+    width: 80px; font-size: 11px; text-align: right; flex-shrink: 0; color: #94a3b8;
+  }
+  .bar-tok-name.max { font-weight: 700; }
+  .bar-tok-name.banco { color: #f59e0b; }
+  .bar-tok-name.fin   { color: #10b981; }
+  .bar-track { flex: 1; height: 16px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .bar-fill.max  { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .bar-fill.norm { background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
+  .bar-pct { width: 40px; font-size: 10px; color: #475569; }
+  .bar-pct.max { color: #f59e0b; font-weight: 700; }
+  .bar-arrow { font-size: 10px; color: #f59e0b; }
+
+  .attn-note {
+    margin-top: 14px; font-size: 10px; color: #334155;
+    border-top: 1px solid #1e293b; padding-top: 10px;
+  }
+
+  /* ════════════ PRED ════════════ */
+  .pred-wrap { max-width: 520px; margin: 0 auto; }
+  .pred-subtitle { font-size: 11px; color: #475569; text-align: center; margin-bottom: 16px; }
+
+  .context-btns { display: flex; gap: 8px; margin-bottom: 16px; }
+  .ctx-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 11px; line-height: 1.4; transition: all .2s;
+    background: #1e293b; color: #64748b;
+  }
+  .ctx-btn .ctx-label { font-size: 10px; color: #475569; margin-bottom: 4px; }
+  .ctx-btn.active-y { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b; font-weight: 700; }
+  .ctx-btn.active-g { background: #10b98122; color: #10b981; border: 1px solid #10b981; font-weight: 700; }
+  .ctx-btn.inactive { border: 1px solid #1e293b; }
+
+  .prob-card {
+    background: #0f172a; border-radius: 10px; padding: 14px; border: 1px solid #1e293b;
+  }
+  .prob-card-title { font-size: 10px; color: #475569; margin-bottom: 14px; letter-spacing: 2px; }
+  .prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .prob-word { width: 90px; font-size: 12px; color: #94a3b8; }
+  .prob-word.best-y { color: #f59e0b; font-weight: 700; }
+  .prob-word.best-g { color: #10b981; font-weight: 700; }
+  .prob-track { flex: 1; height: 18px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+  .prob-pct { width: 48px; font-size: 11px; text-align: right; color: #475569; }
+  .prob-pct.best-y { color: #f59e0b; font-weight: 700; }
+  .prob-pct.best-g { color: #10b981; font-weight: 700; }
+
+  .disamb-box {
+    margin-top: 14px; background: #0f172a; border: 1px solid #a78bfa44;
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .disamb-title { font-size: 11px; color: #a78bfa; font-weight: 700; margin-bottom: 6px; }
+  .disamb-body  { font-size: 11px; color: #64748b; line-height: 1.7; }
+
+  /* ── FOOTER ── */
+  .footer { text-align: center; margin-top: 28px; font-size: 10px; color: #1e293b; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="eyebrow">ARQUITECTURA</div>
+  <h1>TRANSFORMER LM — Predictor de Siguiente Palabra</h1>
+  <p>Atención causal · contexto completo · backprop analítico NumPy</p>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('arch', this)">🏗 Arquitectura</button>
+  <button class="tab-btn"        onclick="switchTab('attn', this)">🔍 Self-Attention</button>
+  <button class="tab-btn"        onclick="switchTab('pred', this)">📊 Predicciones</button>
+</div>
+
+<!-- ══════════ ARCH PANEL ══════════ -->
+<div id="panel-arch" class="panel active">
+  <div class="arch-wrap">
+    <div class="arch-subtitle">Flujo de datos para la frase de ejemplo</div>
+
+    <div class="arch-card">
+      <!-- Tokens -->
+      <div class="sentence-box">
+        <div class="sentence-label">SECUENCIA DE ENTRADA</div>
+        <div class="tokens-row" id="arch-tokens"></div>
+      </div>
+
+      <!-- Layers -->
+      <div id="arch-layers"></div>
+
+      <!-- Output -->
+      <div class="output-box">
+        <div class="output-label">Predicción</div>
+        <div class="output-pred">« no »&nbsp;&nbsp;17.0%</div>
+      </div>
+    </div>
+
+    <!-- Insight -->
+    <div class="insight">
+      <div class="insight-title">⚡ Por qué el Transformer supera al LSTM aquí</div>
+      <div class="insight-body">
+        Para predecir la siguiente palabra de <span class="hl-yellow">«banco»</span>,
+        el transformer calcula atención sobre <strong class="hl-white">toda la frase</strong>
+        al mismo tiempo. Ve <span class="hl-green">«financiero»</span> y concluye que
+        <span class="hl-yellow">«banco»</span> es financiero (no fluvial).
+        El LSTM lo vería demasiado tarde o lo olvidaría.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ATTN PANEL ══════════ -->
+<div id="panel-attn" class="panel">
+  <div class="attn-wrap">
+    <div class="attn-subtitle">Haz clic en un token para ver a qué palabras atiende</div>
+
+    <div class="token-selector">
+      <div class="selector-label">TOKEN ACTIVO</div>
+      <div class="selector-row" id="tok-btns"></div>
+    </div>
+
+    <div class="attn-bars-card">
+      <div class="attn-bars-title" id="bars-title">PESOS DE ATENCIÓN</div>
+      <div id="attn-bars"></div>
+      <div class="attn-note">
+        La máscara causal garantiza que el token en posición <em>t</em> solo
+        puede atender a posiciones <em>≤ t</em> (no ve el futuro).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PRED PANEL ══════════ -->
+<div id="panel-pred" class="panel">
+  <div class="pred-wrap">
+    <div class="pred-subtitle">
+      El mismo token «banco» genera predicciones MUY diferentes según el contexto
+    </div>
+
+    <div class="context-btns">
+      <button id="ctx-fin" class="ctx-btn active-y" onclick="switchPred('financiero')">
+        <div class="ctx-label">Prompt</div>
+        <div>«...porque el →»</div>
+      </button>
+      <button id="ctx-rio" class="ctx-btn inactive" onclick="switchPred('banco del río')">
+        <div class="ctx-label">Prompt</div>
+        <div>«banco del río →»</div>
+      </button>
+    </div>
+
+    <div class="prob-card">
+      <div class="prob-card-title">DISTRIBUCIÓN DE PROBABILIDAD</div>
+      <div id="prob-bars"></div>
+    </div>
+
+    <div class="disamb-box">
+      <div class="disamb-title">🧠 Desambiguación por contexto completo</div>
+      <div class="disamb-body" id="disamb-text"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Transformer LM · NumPy backprop · 54,592 parámetros · 35 frases de corpus</div>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────
+const TOKENS = ["el","banco","estaba","cerrado","porque","el","financiero","no","llegó"];
+
+const ATTN = [
+  [0.95,0.01,0.01,0.01,0.01,0,0,0,0],
+  [0.05,0.90,0.01,0.01,0.01,0,0,0,0],
+  [0.02,0.10,0.85,0.01,0.01,0,0,0,0],
+  [0.01,0.10,0.20,0.65,0.01,0,0,0,0],
+  [0.02,0.05,0.10,0.15,0.65,0,0,0,0],
+  [0.40,0.05,0.05,0.05,0.05,0.40,0,0,0],
+  [0.02,0.55,0.08,0.20,0.05,0.05,0.05,0,0],
+  [0.01,0.04,0.05,0.08,0.20,0.02,0.55,0.05,0],
+  [0.01,0.03,0.03,0.05,0.15,0.02,0.30,0.35,0.06],
+];
+
+const LAYERS = [
+  { label: "Input Tokens",               color: "#94a3b8", desc: "IDs enteros → vocabulario" },
+  { label: "Embedding + Pos.Enc",        color: "#38bdf8", desc: "Vectores semánticos + posición sinusoidal" },
+  { label: "Multi-Head Attention (causal)", color: "#f59e0b", desc: "Cada token ve TODA la secuencia anterior simultáneamente" },
+  { label: "Add & Norm",                 color: "#a78bfa", desc: "Conexión residual + normalización" },
+  { label: "Feed-Forward (ReLU)",        color: "#34d399", desc: "Transformación no-lineal por dimensión" },
+  { label: "Add & Norm",                 color: "#a78bfa", desc: "Conexión residual + normalización" },
+  { label: "LM Head → Softmax",          color: "#f472b6", desc: "P(palabra siguiente) sobre vocabulario completo" },
+];
+
+const PREDICTIONS = {
+  "financiero": [
+    { word: "no",      prob: 0.170 },
+    { word: "el",      prob: 0.130 },
+    { word: "río",     prob: 0.126 },
+    { word: "crédito", prob: 0.126 },
+    { word: "llegó",   prob: 0.083 },
+    { word: "tarde",   prob: 0.074 },
+  ],
+  "banco del río": [
+    { word: "mucha",   prob: 0.876 },
+    { word: "un",      prob: 0.115 },
+    { word: "dinero",  prob: 0.002 },
+    { word: "muchos",  prob: 0.002 },
+  ],
+};
+
+// ── STATE ────────────────────────────────────────────────────────
+let focusToken = 6;
+let predKey    = "financiero";
+
+// ── ARCH: render tokens ──────────────────────────────────────────
+(function buildArch() {
+  const tokRow = document.getElementById('arch-tokens');
+  TOKENS.forEach((t, i) => {
+    const span = document.createElement('span');
+    span.className = 'token' + (i===1 ? ' banco' : i===6 ? ' fin' : '');
+    span.textContent = t;
+    tokRow.appendChild(span);
+  });
+
+  const layersEl = document.getElementById('arch-layers');
+  LAYERS.forEach((l, i) => {
+    const row = document.createElement('div');
+    row.className = 'layer-row';
+    row.innerHTML = `
+      <div class="layer-badge" style="background:${l.color}22;border:1px solid ${l.color}44;color:${l.color}">${i}</div>
+      <div>
+        <div class="layer-name" style="color:${l.color}">${l.label}</div>
+        <div class="layer-desc">${l.desc}</div>
+      </div>
+    `;
+    layersEl.appendChild(row);
+  });
+})();
+
+// ── ATTN: render token buttons ───────────────────────────────────
+function buildTokBtns() {
+  const container = document.getElementById('tok-btns');
+  container.innerHTML = '';
+  TOKENS.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tok-btn';
+    btn.textContent = t;
+    const isActive = i === focusToken;
+    if (isActive) {
+      btn.classList.add(i===1 ? 'active-banco' : i===6 ? 'active-fin' : 'active-default');
+    }
+    btn.onclick = () => { focusToken = i; buildTokBtns(); renderBars(); };
+    container.appendChild(btn);
+  });
+}
+
+function renderBars() {
+  const row  = ATTN[focusToken];
+  const max  = Math.max(...row.slice(0, focusToken + 1));
+  const title = document.getElementById('bars-title');
+  title.textContent = `PESOS DE ATENCIÓN — «${TOKENS[focusToken]}» atiende a:`;
+
+  const container = document.getElementById('attn-bars');
+  container.innerHTML = '';
+
+  for (let i = 0; i <= focusToken; i++) {
+    const w      = row[i];
+    const isMax  = w === max;
+    const isBanc = i === 1;
+    const isFin  = i === 6;
+
+    const div = document.createElement('div');
+    div.className = 'bar-row';
+    div.innerHTML = `
+      <div class="bar-tok-name ${isMax?'max':''} ${isBanc?'banco':''} ${isFin?'fin':''}">${TOKENS[i]}</div>
+      <div class="bar-track">
+        <div class="bar-fill ${isMax?'max':'norm'}" style="width:${w*100}%"></div>
+      </div>
+      <div class="bar-pct ${isMax?'max':''}">${(w*100).toFixed(0)}%</div>
+      ${isMax ? '<div class="bar-arrow">◄</div>' : ''}
+    `;
+    container.appendChild(div);
+  }
+}
+
+buildTokBtns();
+renderBars();
+
+// ── PRED: render probability bars ────────────────────────────────
+function renderProbs() {
+  const data    = PREDICTIONS[predKey];
+  const isY     = predKey === "financiero";
+  const bestClr = isY ? 'linear-gradient(90deg,#92400e,#f59e0b)' : 'linear-gradient(90deg,#064e3b,#10b981)';
+  const normClr = 'linear-gradient(90deg,#1e3a5f,#3b82f6)';
+
+  const container = document.getElementById('prob-bars');
+  container.innerHTML = '';
+  data.forEach(({ word, prob }, i) => {
+    const isBest = i === 0;
+    const div = document.createElement('div');
+    div.className = 'prob-row';
+    div.innerHTML = `
+      <div class="prob-word ${isBest ? (isY?'best-y':'best-g') : ''}">${word}</div>
+      <div class="prob-track">
+        <div class="prob-fill" style="width:${prob*100}%;background:${isBest?bestClr:normClr}"></div>
+      </div>
+      <div class="prob-pct ${isBest ? (isY?'best-y':'best-g') : ''}">${(prob*100).toFixed(1)}%</div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Context buttons styling
+  const btnFin = document.getElementById('ctx-fin');
+  const btnRio = document.getElementById('ctx-rio');
+  btnFin.className = 'ctx-btn ' + (isY ? 'active-y' : 'inactive');
+  btnRio.className = 'ctx-btn ' + (!isY ? 'active-g' : 'inactive');
+  if (!isY) btnRio.style.border = '1px solid #10b981';
+
+  // Disamb text
+  const disamb = document.getElementById('disamb-text');
+  if (isY) {
+    disamb.innerHTML = '«banco» en contexto financiero → predice <strong style="color:#f59e0b">«no»</strong> (próximo: "no llegó"). El transformer vio «financiero» y «cerrado» y entiende el escenario.';
+  } else {
+    disamb.innerHTML = '«banco» en contexto fluvial → predice <strong style="color:#10b981">«mucha»</strong> con 87.6% (próximo: "mucha vegetación"). El contexto «del río» reorienta completamente la atención.';
+  }
+}
+
+function switchPred(key) {
+  predKey = key;
+  renderProbs();
+}
+
+renderProbs();
+
+// ── TAB SWITCHER ─────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

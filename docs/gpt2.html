@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuestro Transformer vs GPT-2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #030712;
+    --bg1:     #0f172a;
+    --bg2:     #1e293b;
+    --border:  #1e293b;
+    --muted:   #475569;
+    --text:    #94a3b8;
+    --white:   #e2e8f0;
+    --yellow:  #f59e0b;
+    --blue:    #38bdf8;
+    --green:   #10b981;
+    --purple:  #a78bfa;
+    --red:     #ef4444;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+
+  /* ── HEADER ── */
+  .header { text-align: center; margin-bottom: 32px; }
+  .header .eyebrow {
+    font-size: 10px; letter-spacing: 6px; color: var(--muted); margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: clamp(18px, 4vw, 26px); font-weight: 900; letter-spacing: -1px;
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #a78bfa 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p { color: var(--muted); font-size: 11px; margin-top: 8px; letter-spacing: .5px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; justify-content: center; gap: 6px; margin-bottom: 28px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 11px; background: transparent;
+    color: var(--muted); border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .tab-btn.active {
+    background: var(--bg2); color: var(--yellow);
+    border-bottom-color: var(--yellow);
+  }
+
+  /* ── PANELS ── */
+  .panel { display: none; max-width: 880px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex; gap: 20px; justify-content: flex-end;
+    margin-bottom: 14px; font-size: 10px; flex-wrap: wrap;
+  }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ── SECCION ── */
+  .seccion { margin-bottom: 6px; }
+  .sec-header {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    background: var(--bg1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px; cursor: pointer;
+    color: var(--white); font-family: inherit; text-align: left;
+    transition: background .15s;
+  }
+  .sec-header:hover { background: var(--bg2); }
+  .sec-header.open { border-radius: 8px 8px 0 0; }
+  .sec-title { font-weight: 700; font-size: 13px; letter-spacing: 1px; }
+  .sec-count { margin-left: auto; color: var(--muted); font-size: 11px; }
+  .sec-arrow { transition: transform .2s; }
+  .sec-header.open .sec-arrow { transform: rotate(180deg); }
+
+  /* ── TABLE BODY ── */
+  .sec-body {
+    border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px; overflow: hidden;
+    display: none;
+  }
+  .sec-body.open { display: block; }
+
+  .col-headers {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    background: var(--bg1); border-bottom: 1px solid var(--border);
+  }
+  .col-h {
+    padding: 6px 14px; font-size: 10px; color: var(--muted);
+    letter-spacing: 1px; font-weight: 700;
+  }
+  .col-h:not(:first-child) { border-left: 1px solid var(--border); }
+
+  .fila {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid #0f172a; transition: background .15s;
+  }
+  .fila:last-child { border-bottom: none; }
+  .fila:hover { background: var(--bg1); }
+  .fila:hover .celda { background: transparent; }
+
+  .celda { padding: 9px 14px; font-size: 11px; }
+  .celda:not(:first-child) { border-left: 1px solid #0f172a; }
+  .c-feature { color: var(--muted); }
+  .c-nuestro  { color: var(--yellow); font-weight: 500; }
+  .c-gpt2     { color: var(--blue); }
+  .c-igual    { color: var(--green); font-weight: 400; }
+
+  /* ── SCALE TAB ── */
+  .scale-card {
+    background: var(--bg1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .scale-label {
+    font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .bar-name { width: 100px; font-size: 10px; text-align: right; flex-shrink: 0; }
+  .bar-track {
+    flex: 1; height: 14px; background: var(--bg2);
+    border-radius: 3px; overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 3px; min-width: 3px; transition: width 1s ease; }
+  .bar-val { width: 70px; font-size: 10px; flex-shrink: 0; }
+
+  .analogy-card {
+    background: var(--bg1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px;
+  }
+  .analogy-title { font-size: 11px; color: var(--yellow); font-weight: 700; margin-bottom: 16px; letter-spacing: 1px; }
+  .analogy-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; }
+
+  /* ── VEREDICTO TAB ── */
+  .verdict-card {
+    border-radius: 12px; padding: 18px 22px; margin-bottom: 12px;
+  }
+  .verdict-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; letter-spacing: .5px; }
+  .verdict-item { display: flex; gap: 10px; margin-bottom: 8px; font-size: 11px; color: var(--text); }
+  .verdict-arrow { flex-shrink: 0; }
+
+  .conclusion {
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    border: 1px solid #334155; border-radius: 12px;
+    padding: 20px 24px; margin-top: 8px;
+  }
+  .conclusion-eyebrow {
+    font-size: 11px; color: var(--muted); font-weight: 700;
+    margin-bottom: 10px; letter-spacing: 2px;
+  }
+  .conclusion p { font-size: 12px; color: var(--text); line-height: 1.8; }
+
+  /* ── FOOTER ── */
+  .footer { text-align: center; margin-top: 28px; font-size: 10px; color: #1e293b; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="eyebrow">ANÁLISIS COMPARATIVO</div>
+  <h1>Nuestro Transformer vs GPT-2</h1>
+  <p>54,592 parámetros · NumPy puro · 35 frases &nbsp;vs&nbsp; 117M–1.5B params · PyTorch + GPU · 40 GB de texto</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('tabla')">📋 Tabla completa</button>
+  <button class="tab-btn"        onclick="switchTab('escala')">📐 Diferencia de escala</button>
+  <button class="tab-btn"        onclick="switchTab('veredicto')">⚖️ Veredicto</button>
+</div>
+
+<!-- ══════════════ TABLA ══════════════ -->
+<div id="panel-tabla" class="panel active">
+  <div class="legend">
+    <span><div class="dot" style="background:#10b981"></div> Igual / equivalente</span>
+    <span><div class="dot" style="background:#f59e0b"></div> Nuestro modelo</span>
+    <span><div class="dot" style="background:#38bdf8"></div> GPT-2</span>
+  </div>
+
+  <div id="secciones"></div>
+  <div class="footer">Haz clic en una categoría para expandirla</div>
+</div>
+
+<!-- ══════════════ ESCALA ══════════════ -->
+<div id="panel-escala" class="panel">
+  <div class="scale-card" style="max-width:640px;margin:0 auto 16px;">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:24px;letter-spacing:1px;">
+      DIFERENCIA DE ESCALA (proporcional logarítmica)
+    </div>
+    <div id="scale-bars"></div>
+  </div>
+  <div class="analogy-card" style="max-width:640px;margin:0 auto;">
+    <div class="analogy-title">📏 ANALOGÍA DE ESCALA</div>
+    <div class="analogy-row">
+      <span style="color:#f59e0b;font-weight:700;min-width:140px;">Nuestro modelo</span>
+      <span style="color:#334155">es como</span>
+      <span style="color:#94a3b8">un cuaderno de 1 página</span>
+    </div>
+    <div class="analogy-row">
+      <span style="color:#38bdf8;font-weight:700;min-width:140px;">GPT-2 Small</span>
+      <span style="color:#334155">es como</span>
+      <span style="color:#94a3b8">una biblioteca de 2,000 libros</span>
+    </div>
+    <div class="analogy-row">
+      <span style="color:#a78bfa;font-weight:700;min-width:140px;">GPT-2 XL</span>
+      <span style="color:#334155">es como</span>
+      <span style="color:#94a3b8">27,000 libros</span>
+    </div>
+    <div class="analogy-row">
+      <span style="color:#ec4899;font-weight:700;min-width:140px;">GPT-3</span>
+      <span style="color:#334155">es como</span>
+      <span style="color:#94a3b8">toda Wikipedia × 500</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ VEREDICTO ══════════════ -->
+<div id="panel-veredicto" class="panel">
+  <div style="max-width:640px;margin:0 auto;">
+
+    <div class="verdict-card" style="background:#0f172a;border:1px solid #10b98133;">
+      <div class="verdict-title" style="color:#10b981;">Lo que comparten ✅</div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#10b981;">→</span><span>Misma arquitectura fundamental: Decoder-only Transformer</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#10b981;">→</span><span>Self-attention causal: cada token ve todo el contexto anterior</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#10b981;">→</span><span>Weight tying entre embedding y LM head</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#10b981;">→</span><span>Función objetivo idéntica: cross-entropy sobre la siguiente palabra</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#10b981;">→</span><span>Backpropagation analítico correcto en ambos</span></div>
+    </div>
+
+    <div class="verdict-card" style="background:#0f172a;border:1px solid #38bdf833;">
+      <div class="verdict-title" style="color:#38bdf8;">Dónde GPT-2 nos supera ⚡</div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#38bdf8;">→</span><span>2,143× más parámetros (117M vs 54K) → mucha más capacidad</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#38bdf8;">→</span><span>Tokenización BPE → maneja cualquier palabra, idioma, código</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#38bdf8;">→</span><span>Contexto 42× mayor (1,024 vs 24 tokens) → coherencia larga</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#38bdf8;">→</span><span>Entrenado con 26,666,667× más texto (40 GB vs ~1.5 KB)</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#38bdf8;">→</span><span>GPU con batches → 1,000× más rápido para entrenar</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#38bdf8;">→</span><span>Positional embeddings aprendidos → más flexibles</span></div>
+    </div>
+
+    <div class="verdict-card" style="background:#0f172a;border:1px solid #f59e0b33;">
+      <div class="verdict-title" style="color:#f59e0b;">Dónde nuestro modelo gana 🏆</div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#f59e0b;">→</span><span>100% comprensible: cada línea de código es tuya y legible</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#f59e0b;">→</span><span>Backprop implementado a mano → entiendes exactamente qué pasa</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#f59e0b;">→</span><span>Corre en cualquier CPU sin dependencias pesadas</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#f59e0b;">→</span><span>Entrenable en segundos, no semanas</span></div>
+      <div class="verdict-item"><span class="verdict-arrow" style="color:#f59e0b;">→</span><span>Ideal para aprender cómo funcionan los LLMs desde cero</span></div>
+    </div>
+
+    <div class="conclusion">
+      <div class="conclusion-eyebrow">CONCLUSIÓN</div>
+      <p>
+        Nuestro modelo es a GPT-2 lo que una
+        <strong style="color:#f59e0b;"> calculadora de bolsillo</strong>
+        es a una
+        <strong style="color:#38bdf8;"> supercomputadora</strong>.
+        La física que los rige es
+        <strong style="color:#10b981;"> idéntica</strong>.
+        La diferencia es pura escala de datos, hardware y tiempo de entrenamiento.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATOS ──────────────────────────────────────────────────────
+const SECCIONES = [
+  {
+    cat: "Arquitectura", icono: "⚙️",
+    filas: [
+      { f: "Tipo de modelo",        n: "Decoder-only Transformer",   g: "Decoder-only Transformer",        igual: true },
+      { f: "Capas (N layers)",      n: "2",                          g: "12 – 48",                          igual: false },
+      { f: "d_model",               n: "64",                         g: "768 – 1,600",                      igual: false },
+      { f: "Cabezas de atención",   n: "4",                          g: "12 – 25",                          igual: false },
+      { f: "Feed-forward dim",      n: "128",                        g: "3,072 – 6,400",                    igual: false },
+      { f: "Activación FFN",        n: "ReLU",                       g: "GELU",                             igual: false },
+      { f: "Weight tying",          n: "✓ Sí",                       g: "✓ Sí",                             igual: true  },
+      { f: "Positional encoding",   n: "Sinusoidal (fijo)",          g: "Aprendido (trainable)",            igual: false },
+    ]
+  },
+  {
+    cat: "Escala", icono: "📐",
+    filas: [
+      { f: "Parámetros totales",    n: "54,592",                     g: "117M – 1,500M",                    igual: false },
+      { f: "Contexto máximo",       n: "24 tokens",                  g: "1,024 tokens",                     igual: false },
+      { f: "Vocabulario",           n: "~170 palabras",              g: "50,257 subpalabras (BPE)",          igual: false },
+      { f: "Corpus de entreno",     n: "35 frases (~300 tokens)",    g: "WebText: 40 GB (~8,000M tokens)",  igual: false },
+    ]
+  },
+  {
+    cat: "Tokenización", icono: "🔤",
+    filas: [
+      { f: "Método",                n: "Palabras completas",         g: "Byte Pair Encoding (BPE)",         igual: false },
+      { f: "Palabras desconocidas", n: "<UNK> (falla silenciosa)",   g: "Siempre encodeable",               igual: false },
+      { f: "Idiomas soportados",    n: "Limitado al corpus",         g: "Multilingüe real",                 igual: false },
+      { f: "Subword splitting",     n: "No",                         g: "Sí: 'running'→['run','ning']",     igual: false },
+    ]
+  },
+  {
+    cat: "Entrenamiento", icono: "🏋️",
+    filas: [
+      { f: "Backend",               n: "NumPy (CPU, 1 ejemplo/vez)", g: "PyTorch + CUDA (GPU, batches)",    igual: false },
+      { f: "Tiempo por época",      n: "~2 seg (35 frases)",         g: "~12 hrs (40 GB datos)",            igual: false },
+      { f: "Optimizador",           n: "Adam manual NumPy",          g: "Adam + lr warmup + decay",         igual: false },
+      { f: "Regularización",        n: "Ninguna",                    g: "Dropout + weight decay",           igual: false },
+      { f: "Checkpoints",           n: "pickle manual",              g: "Automático cada N pasos",          igual: false },
+      { f: "Mixed precision",       n: "No (float64)",               g: "fp16 / bf16",                      igual: false },
+    ]
+  },
+  {
+    cat: "Capacidades", icono: "🧠",
+    filas: [
+      { f: "Mecanismo de atención", n: "✓ Self-attention causal",    g: "✓ Self-attention causal",          igual: true  },
+      { f: "Backprop analítico",    n: "✓ Implementado a mano",      g: "✓ Autograd de PyTorch",            igual: true  },
+      { f: "Coherencia larga",      n: "No (24 tokens de contexto)", g: "Sí (hasta 1,024 tokens)",          igual: false },
+      { f: "Generación de texto",   n: "1 sola palabra",             g: "Párrafos completos",               igual: false },
+      { f: "Few-shot learning",     n: "No",                         g: "Limitado",                         igual: false },
+    ]
+  },
+  {
+    cat: "Producción", icono: "🚀",
+    filas: [
+      { f: "API pública",           n: "No",                         g: "HuggingFace Hub",                  igual: false },
+      { f: "Licencia",              n: "Tu código, libre",           g: "MIT (OpenAI, 2019)",               igual: false },
+      { f: "Hardware necesario",    n: "Cualquier CPU",              g: "GPU 16 GB+ para entrenar",         igual: false },
+      { f: "Inferencia",            n: "~50 ms (CPU)",               g: "~10 ms (GPU)",                     igual: false },
+    ]
+  },
+];
+
+// ── ESCALA ──────────────────────────────────────────────────────
+const SCALE = [
+  { label: "Parámetros",  n: 54592,      s: 117e6,    xl: 1.5e9,   u: "" },
+  { label: "Vocabulario", n: 170,        s: 50257,    xl: 50257,   u: " tokens" },
+  { label: "Contexto",    n: 24,         s: 1024,     xl: 1024,    u: " tokens" },
+  { label: "Corpus",      n: 300,        s: 8e9,      xl: 8e9,     u: " tokens" },
+];
+
+function fmt(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + "B";
+  if (n >= 1e6) return (n/1e6).toFixed(0) + "M";
+  if (n >= 1e3) return (n/1e3).toFixed(0) + "K";
+  return n.toString();
+}
+
+// ── RENDER TABLA ────────────────────────────────────────────────
+const secEl = document.getElementById('secciones');
+SECCIONES.forEach(sec => {
+  const id = 'sec-' + sec.cat.replace(/[^a-z]/gi,'');
+  const div = document.createElement('div');
+  div.className = 'seccion';
+  div.innerHTML = `
+    <button class="sec-header" onclick="toggleSec('${id}', this)">
+      <span style="font-size:16px">${sec.icono}</span>
+      <span class="sec-title">${sec.cat.toUpperCase()}</span>
+      <span class="sec-count">▼ &nbsp;${sec.filas.length} características</span>
+    </button>
+    <div class="sec-body" id="${id}">
+      <div class="col-headers">
+        <div class="col-h">Característica</div>
+        <div class="col-h">🟡 Nuestro modelo</div>
+        <div class="col-h">🔵 GPT-2</div>
+      </div>
+      ${sec.filas.map(f => `
+        <div class="fila">
+          <div class="celda c-feature">${f.f}</div>
+          <div class="celda ${f.igual ? 'c-igual' : 'c-nuestro'}">${f.n}</div>
+          <div class="celda ${f.igual ? 'c-igual' : 'c-gpt2'}">${f.g}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  secEl.appendChild(div);
+});
+
+// ── RENDER ESCALA ────────────────────────────────────────────────
+const barsEl = document.getElementById('scale-bars');
+SCALE.forEach(d => {
+  const MAX = Math.log10(d.xl + 1);
+  const pN  = Math.max(1, (Math.log10(d.n + 1) / MAX) * 100);
+  const pS  = (Math.log10(d.s + 1) / MAX) * 100;
+  barsEl.innerHTML += `
+    <div style="margin-bottom:20px">
+      <div class="scale-label">${d.label.toUpperCase()}</div>
+      ${[
+        { name: "Nuestro",    val: d.n, pct: pN,  color: "#f59e0b" },
+        { name: "GPT-2 Small",val: d.s, pct: pS,  color: "#38bdf8" },
+        { name: "GPT-2 XL",  val: d.xl, pct: 100, color: "#a78bfa" },
+      ].map(r => `
+        <div class="bar-row">
+          <div class="bar-name" style="color:${r.color}">${r.name}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${r.pct}%;background:${r.color}"></div>
+          </div>
+          <div class="bar-val" style="color:${r.color}">${fmt(r.val)}${d.u}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+});
+
+// ── LÓGICA ──────────────────────────────────────────────────────
+function toggleSec(id, btn) {
+  const body = document.getElementById(id);
+  const open = body.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.querySelector('.sec-count').textContent =
+    (open ? '▲' : '▼') + ' \u00a0' + (open ? 'cerrar' : btn.querySelector('.sec-count').textContent.replace(/[▲▼]\s+/, ''));
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

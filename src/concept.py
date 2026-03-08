@@ -16,7 +16,9 @@ class Rain:
     
     def down(self):
         return Down(1)
-              
+    
+    def not_(self, a: int) -> int:
+        return neuron.not_(a)          
 
 class Fall:
     def __init__(self, state: int):
@@ -46,16 +48,11 @@ class Up:
      self.x = state   
         
 rain = Rain(1)
-fall = Rain(1)
-down = Rain(1)
 
-
-result = [rain.x, neuron.not_(rain.fall().x), rain.fall().up().x]
+#rain not fall up
+result = [rain.x, rain.not_(rain.fall().x), rain.fall().up().x]
 
 print(result)
 print(all(result))
-#rain -> fall -> rain -> fall
-#rain -> fall -> down -> rain -> fall -> down
-#rain -> fall -> down
 
 

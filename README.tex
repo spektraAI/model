@@ -65,10 +65,8 @@ I've always wondered how the brain performs complex mathematical calculations at
 
 
 \begin{lstlisting}
-	
 	def nand(a, b):
-		return not (a and b)
-	
+		return 1 - (a & b)
 \end{lstlisting}
 
 
@@ -77,7 +75,16 @@ I've always wondered how the brain performs complex mathematical calculations at
 
 
 
-
+\begin{center}
+	\begin{tabular}{|c|c|c|} 
+		\hline
+		\textbf{Input A} & \textbf{Input B} & \textbf{Output} \\ \hline
+		0 & 0 & 1 \\ \hline
+		0 & 1 & 1 \\ \hline
+		1 & 0 & 1 \\ \hline
+		1 & 1 & 0 \\ \hline
+	\end{tabular}
+\end{center}
 
 
 

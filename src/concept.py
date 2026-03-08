@@ -1,58 +1,15 @@
-from typing import Self
+from src.concepts.rain import Rain
 from src.neuron.neuron import Neuron
 
 neuron = Neuron()
     
-class Rain:
-    def __init__(self, state: int):
-        self.state = state
-        self.x = state
-
-    def rain(self, a) -> Self:
-        return self
-            
-    def fall(self):
-        return Fall(1)
-    
-    def down(self):
-        return Down(1)
-    
-    def not_(self, a: int) -> int:
-        return neuron.not_(a)          
-
-class Fall:
-    def __init__(self, state: int):
-        self.state = state
-        self.x = state
-        
-    def fall(self, a)-> Self:
-        return self
-    
-    def down(self):
-        return Down(1)
-            
-    def rain(self):
-        return Rain(1)
-
-    def up(self):
-        return Up(0)        
-        
-class Down:
-    def __init__(self, state: int):
-     self.state = state
-     self.x = state
-     
-class Up:
-    def __init__(self, state: int):
-     self.state = state    
-     self.x = state   
-        
+              
 rain = Rain(1)
 
 #rain not fall up
-result = [rain.x, rain.not_(rain.fall().x), rain.fall().up().x]
+r1 = [rain.x, rain.not_(rain.fall().x), rain.fall().up().x]
 
-print(result)
-print(all(result))
+print(r1)
+print(all(r1))
 
 

@@ -243,8 +243,8 @@ def classify_image(image_input) -> str:
         Una sola palabra con el patrón detectado.
     """
     vec = preprocess(image_input)
-    label, _ = bam.classify(vec, LABEL_VECS)
-    return label                          # ← UNA SOLA PALABRA
+    result = bam.classify(vec, LABEL_VECS)
+    return result                          # ← UNA SOLA PALABRA
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -323,6 +323,7 @@ def ejemplo_uso():
     label = "carro"
     
     img = gen_texto(label)
+    img.save(ruta_actual / "input" / f"{label}_generada.png")
     print(f"  PIL Image   → '{classify_image(img)}'")
     
     img_out = generate_image(label)          

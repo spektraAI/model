@@ -1,5 +1,5 @@
 from typing import Self
-import src.concepts.fall as c
+import src.concepts as c
 from src.neuron.neuron import Neuron
 
 neuron = Neuron()
@@ -19,8 +19,8 @@ class Rain:
     def down(self):
         return c.Down(1)
     
-    def not_(self, a: int) -> int:
-        return neuron.not_(a)   
+    def not_(self):
+        return c.Not(1) 
     
     
     

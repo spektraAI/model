@@ -5,3 +5,5 @@ from .up import *
 from .you import *
 from .like import *
 from .coffe import *
+from .do import *
+from .not_ import *

@@ -78,7 +78,7 @@ def gen_image(path: str, size: int = CANVAS) -> Image.Image:
     return img
 
 PATTERN_GENERATORS = {
-    "carro" : lambda: gen_texto("carro"),
+    "carro de dos" : lambda: gen_texto("carro de dos"),
     "manzana" : lambda: gen_texto("manzana"),
     "pera" : lambda: gen_texto("pera"),
     #"gato" : lambda: gen_image("gato.jpg") # solo si los demas son imagenes
@@ -310,7 +310,7 @@ def generate_image(label: str, size: int = CANVAS,
 # 8.  EJEMPLO DE USO DIRECTO
 # ─────────────────────────────────────────────────────────────────
 def ejemplo_uso():
-    label = "manzana"
+    label = "carro de dos"
     
     img = gen_texto(label)
     img.save(ruta_actual / "input" / f"{label}_generada.png")

@@ -72,7 +72,7 @@ def gen_estrella(size=CANVAS):
         pts.append((cx + r * np.cos(angle), cy - r * np.sin(angle)))
     d.polygon(pts, fill=0); return img
 
-def gen_texto(word: str, size: int = CANVAS):
+def gen_texto(word: str, size: int = CANVAS) -> Image.Image:
     img, d = _base(size)
     font_size = size
     while font_size > 8:
@@ -88,10 +88,16 @@ def gen_texto(word: str, size: int = CANVAS):
     d.text((x, y), word, fill=0, font=font)
     return img
 
+def gen_image(path: str, size: int = CANVAS) -> Image.Image:
+    img = Image.open(ruta_actual / "input" / path).convert("L")
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
 PATTERN_GENERATORS = {
     "circulo":   gen_circulo,
     "estrella":  gen_estrella,
-    "carro" : lambda: gen_texto("carro")
+    "carro" : lambda: gen_texto("carro"),
+    "gato" : lambda: gen_image("gato.jpg")
 }
 
 LABELS = list(PATTERN_GENERATORS.keys())
@@ -320,7 +326,7 @@ def generate_image(label: str, size: int = CANVAS,
 # 8.  EJEMPLO DE USO DIRECTO
 # ─────────────────────────────────────────────────────────────────
 def ejemplo_uso():
-    label = "carro"
+    label = "gato"
     
     img = gen_texto(label)
     img.save(ruta_actual / "input" / f"{label}_generada.png")

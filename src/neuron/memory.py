@@ -24,8 +24,8 @@ from pathlib import Path
 # ─────────────────────────────────────────────────────────────────
 # Configuración — debe coincidir con bam_vision.py si se usan juntos
 # ─────────────────────────────────────────────────────────────────
-GRID      = 28 * 10   # retina 280×280 → 78,400 features
-LABEL_DIM = 32 * 10   # 320 dims por vector de etiqueta
+GRID      = 28 * 10   # retina features
+LABEL_DIM = 32 * 1   #  dims por vector de etiqueta
 
 INPUT_DIR  = Path.cwd() / "input"
 OUTPUT_DIR = Path.cwd() / "output"
@@ -226,7 +226,7 @@ class BAN:
             print("📊 Scores  :")
             for lbl, score in sorted(scores.items(), key=lambda x: -x[1]):
                 marker = " ← ganador" if lbl == winner else ""
-                print(f"   {lbl:<14} {score:+.4f} {marker}")
+                print(f"   {lbl:<14} {score:+.5f} {marker}")
 
         return winner, scores
 

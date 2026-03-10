@@ -232,23 +232,7 @@ def word_to_image(
         f"lienzo fijo {img_w}×{img_h}" if canvas_w else
         ("cuadrada auto" if wrap else "rectangular auto")
     )
-    print(f"✅ [{modo_str}] {dest.resolve()}  ({img_w}×{img_h} px)")
+    #print(f"✅ [{modo_str}] {dest.resolve()}  ({img_w}×{img_h} px)")
     return dest.resolve()
 
 
-# ── Demo ─────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    import os; os.makedirs("demo", exist_ok=True)
-
-    SIZE = (400, 200)
-
-    # Mismo size → "carro manzana" en las mismas coordenadas en ambas
-    frase_a_imagen(path="demo", frase="carro manzana",       filename="size_a", padding=10, size=SIZE, wrap=True)
-    frase_a_imagen(path="demo", frase="carro manzana nube",  filename="size_b", padding=10, size=SIZE, wrap=True)
-
-    # Sin size: auto
-    frase_a_imagen(path="demo", frase="casa",                filename="auto_rect",   padding=10)
-    frase_a_imagen(path="demo", frase="Hola mundo cuadrado", filename="auto_cuad",   padding=10, wrap=True)
-
-    # size cuadrado como int
-    frase_a_imagen(path="demo", frase="Python rules",        filename="sq256",       padding=12, size=256, wrap=True)

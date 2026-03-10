@@ -21,6 +21,7 @@ from typing import Tuple
 import numpy as np
 from PIL import Image, ImageOps, ImageFilter
 from pathlib import Path
+import scipy.sparse as sp
 
 # ─────────────────────────────────────────────────────────────────
 # Configuración — debe coincidir con bam_vision.py si se usan juntos
@@ -37,7 +38,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # Preprocesamiento
 # ─────────────────────────────────────────────────────────────────
 
-def _preprocess(image_input, spatial: bool = False) -> Tuple[np.ndarray, Tuple[int,int]]:
+def _preprocess(image_input) -> Tuple[sp.csr_matrix, Tuple[int,int]]:
     """Imagen → vector bipolar (-1 / +1) de longitud GRID²."""
     if isinstance(image_input, (str, Path)):
         img = Image.open(image_input).convert("L")
@@ -50,24 +51,27 @@ def _preprocess(image_input, spatial: bool = False) -> Tuple[np.ndarray, Tuple[i
     else:
         raise TypeError(f"Formato no soportado: {type(image_input)}")
     
-    #spatial
          
     img = ImageOps.pad(img, (GRID, GRID), color=255)  
     arr = np.array(img, dtype=float)
     size = img.size
-    result = np.where(arr < arr.mean(), 1.0, -1.0).flatten()
+    
+    vec = np.where(arr < arr.mean(), 1.0, -1.0).flatten()
+    
+    result = sp.csr_matrix(vec)
     
     return result, size
 
 
 def _encode_label(idx: int, dim: int = LABEL_DIM) -> np.ndarray:
-    """Índice → vector bipolar pseudoaleatorio reproducible."""
     rng = np.random.default_rng(seed=idx * 31337)
-    return rng.choice([-1.0, 1.0], size=dim)
+    return rng.choice([-1.0, 1.0], size=dim).astype(np.float32)   # ← float32
 
 
-def _vec_to_image(vec: np.ndarray, size: Tuple[int,int] = (200,200)) -> Image.Image:
+def _vec_to_image(vec, size: Tuple[int,int] = (200,200)) -> Image.Image:
     """Vector bipolar → PIL.Image escalada a size×size."""
+    if sp.issparse(vec):
+        vec = vec.toarray().flatten()
     grid     = vec.reshape(GRID, GRID)
     arr      = ((1 - grid) / 2 * 255).astype(np.uint8)
     img_small = Image.fromarray(arr, mode="L")
@@ -112,12 +116,11 @@ class BAN:
         self._fitted    : bool                 = False
         self._canonical_A: dict[str, np.ndarray] = {}
         self._canonical_A_size: dict[str, tuple[int, int]] = {}
-        self._spatial: dict[str, bool] = {}
         self.bidirectional = bidirectional
+        self._seen_hashes: set = set()
         
     # ── Entrenamiento ────────────────────────────────────────────
     def train_from_(self, filename: str, label: str,
-                    spatial: bool = False,
                     save_output: bool = True) -> "BAN":
         """
         Registra un par (imagen, label) y reajusta las matrices.
@@ -144,23 +147,24 @@ class BAN:
 
         # ── Vector imagen ────────────────────────────────────────
 
-        vec_A, original_size = _preprocess(ruta, spatial=spatial) 
+        vec_A, original_size = _preprocess(ruta) 
         
-        for existing_vec in self._A_rows:
-            if np.array_equal(existing_vec, vec_A):
-                print(f"  ⚠️  '{label}' ← {filename} ya registrado, se omite")
-                return self
+        _fingerprint = vec_A.toarray().tobytes()
+        if _fingerprint in self._seen_hashes:
+            print(f"  ⚠️  '{label}' ya registrado, se omite")
+            return self
         
+        self._seen_hashes.add(_fingerprint)
+                
 
         # ── Vector etiqueta ──────────────────────────────────────
         if label not in self.label_vecs:
             idx = len(self.labels)
             self.labels.append(label)
             self.label_vecs[label] = _encode_label(idx)
-            self._spatial[label]     = spatial
 
             if self.bidirectional:
-                self._canonical_A[label]     = vec_A 
+                self._canonical_A[label]     = sp.csr_matrix(vec_A)
                 self._canonical_A_size[label]     = original_size 
                 
         vec_B = self.label_vecs[label]
@@ -183,22 +187,27 @@ class BAN:
         return self  # permite encadenar
 
     def _fit(self):
-        """Recalcula W_fwd y W_back con todos los pares acumulados."""
-        self.A_mat  = np.stack(self._A_rows)   # (N, GRID²)
-        self.B_mat  = np.stack(self._B_rows)   # (N, LABEL_DIM)
-        self.W_fwd  = np.linalg.pinv(self.A_mat) @ self.B_mat
-        
+        self.A_mat = sp.vstack(self._A_rows)
+        self.B_mat = np.stack(self._B_rows)                          # ← asignar primero
+
+        A_dense    = self.A_mat.toarray().astype(np.float32)
+        B_dense    = self.B_mat.astype(np.float32)
+
+        self.W_fwd = np.linalg.pinv(A_dense) @ B_dense
+
         if self.bidirectional:
-            self.W_back = np.linalg.pinv(self.B_mat) @ self.A_mat
-        
+            self.W_back = np.linalg.pinv(B_dense) @ A_dense
+
         self._fitted = True
 
     # ── Inferencia ───────────────────────────────────────────────
-    def _forward(self, A: np.ndarray) -> np.ndarray:
+    def _forward(self, A) -> np.ndarray:
+        # ── Convertir sparse a denso antes de multiplicar ────────────
+        if sp.issparse(A):
+            A = A.toarray().flatten()
         return np.sign(A @ self.W_fwd + 1e-9)
 
     def classify_(self, image_input,
-                  spatial: bool = False,
                   verbose: bool = True) -> tuple[str, dict]:
         """
         Clasifica una imagen y retorna (label, scores).
@@ -218,7 +227,7 @@ class BAN:
         if isinstance(image_input, str):
             image_input = INPUT_DIR / image_input
 
-        vec, _   = _preprocess(image_input, spatial=spatial)
+        vec, _   = _preprocess(image_input)
         B_hat = self._forward(vec)
 
         scores = {}
@@ -272,28 +281,26 @@ class BAN:
 
 
     def memory_usage(self) -> dict:
-        """
-        Retorna un resumen de la memoria en uso por la instancia BAN.
-        """
         def mb(arr): return arr.nbytes / 1024 / 1024 if arr is not None else 0
+        def mb_sparse(m): return m.data.nbytes / 1024 / 1024 if m is not None else 0
 
-        A_rows_mb    = sum(v.nbytes for v in self._A_rows)    / 1024 / 1024
-        B_rows_mb    = sum(v.nbytes for v in self._B_rows)    / 1024 / 1024
-        canonical_mb = sum(v.nbytes for v in self._canonical_A.values()) / 1024 / 1024 \
-               if self.bidirectional else 0
-               
+        A_rows_mb    = sum(mb_sparse(v) for v in self._A_rows)
+        B_rows_mb    = sum(v.nbytes for v in self._B_rows)      / 1024 / 1024
+        canonical_mb = sum(mb_sparse(v) for v in self._canonical_A.values()) \
+                    if self.bidirectional else 0
 
         total = (A_rows_mb + B_rows_mb + canonical_mb +
                 mb(self.W_fwd) + mb(self.W_back) +
-                mb(self.A_mat) + mb(self.B_mat))
+                mb_sparse(self.A_mat) if sp.issparse(self.A_mat) else mb(self.A_mat) +
+                mb(self.B_mat))
 
         report = {
             "_A_rows"      : f"{A_rows_mb:.2f} MB",
             "_B_rows"      : f"{B_rows_mb:.2f} MB",
             "_canonical_A" : f"{canonical_mb:.2f} MB" if self.bidirectional else "deshabilitado",
             "W_fwd"        : f"{mb(self.W_fwd):.2f} MB",
-            "W_back" : f"{mb(self.W_back):.2f} MB" if self.bidirectional else "deshabilitado",
-            "A_mat"        : f"{mb(self.A_mat):.2f} MB",
+            "W_back"       : f"{mb(self.W_back):.2f} MB" if self.bidirectional else "deshabilitado",
+            "A_mat"        : f"{mb_sparse(self.A_mat):.2f} MB" if sp.issparse(self.A_mat) else f"{mb(self.A_mat):.2f} MB",
             "B_mat"        : f"{mb(self.B_mat):.2f} MB",
             "TOTAL"        : f"{total:.2f} MB",
         }

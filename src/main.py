@@ -29,7 +29,7 @@ def preprocesar_texto(frase):
 
 def entrenar_memoria():
     for i, p in enumerate(chunks):
-        ban.train_from_(filename=f"{i}.png", label=p, spatial=True)
+        ban.train_from_(filename=f"{i}.png", label=p)
         
     ban.summary()
     ban.memory_usage()

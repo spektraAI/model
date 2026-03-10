@@ -18,9 +18,9 @@ ruta_actual = Path.cwd()
 # ─────────────────────────────────────────────────────────────────
 # 1.  PREPROCESAMIENTO: imagen 200×200 → vector bipolar (-1 / +1)
 # ─────────────────────────────────────────────────────────────────
-CANVAS   = 200 * 10   # tamaño de imagen de entrada
-GRID     = 28  * 10  # resolución de la "retina" (28×28 = 784 features)
-LABEL_DIM = 32 * 10  # dimensión del vector de etiqueta
+CANVAS   = 200 * 1   # tamaño de imagen de entrada
+GRID     = 28  * 1  # resolución de la "retina" (28×28 = 784 features)
+LABEL_DIM = 32 * 1  # dimensión del vector de etiqueta
 
 FONT_BOLD= ruta_actual / "fonts/LiberationSans-Regular.ttf"
 

@@ -158,6 +158,12 @@ class BAN:
 
         # ── Vector imagen ────────────────────────────────────────
         vec_A = _preprocess(ruta)
+        
+        for existing_vec in self._A_rows:
+            if np.array_equal(existing_vec, vec_A):
+                print(f"  ⚠️  '{label}' ← {filename} ya registrado, se omite")
+                return self
+        
 
         # ── Vector etiqueta ──────────────────────────────────────
         if label not in self.label_vecs:

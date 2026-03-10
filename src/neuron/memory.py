@@ -99,7 +99,7 @@ class BAN:
     W_back      : ndarray (LABEL_DIM, GRID²)
     """
 
-    def __init__(self):
+    def __init__(self, bidirectional: bool = False):
         self.labels     : list[str]            = []
         self.label_vecs : dict[str, np.ndarray] = {}
         self._A_rows    : list[np.ndarray]     = []   # acumula vectores imagen
@@ -112,6 +112,8 @@ class BAN:
         self._canonical_A: dict[str, np.ndarray] = {}
         self._canonical_A_size: dict[str, tuple[int, int]] = {}
         self._spatial: dict[str, bool] = {}
+        self.bidirectional = bidirectional
+        
     # ── Entrenamiento ────────────────────────────────────────────
     def train_from_(self, filename: str, label: str,
                     spatial: bool = False,
@@ -154,10 +156,12 @@ class BAN:
             idx = len(self.labels)
             self.labels.append(label)
             self.label_vecs[label] = _encode_label(idx)
-            self._canonical_A[label]     = vec_A 
-            self._canonical_A_size[label]     = original_size 
             self._spatial[label]     = spatial
 
+            if self.bidirectional:
+                self._canonical_A[label]     = vec_A 
+                self._canonical_A_size[label]     = original_size 
+                
         vec_B = self.label_vecs[label]
 
         # ── Acumular par ─────────────────────────────────────────
@@ -182,7 +186,10 @@ class BAN:
         self.A_mat  = np.stack(self._A_rows)   # (N, GRID²)
         self.B_mat  = np.stack(self._B_rows)   # (N, LABEL_DIM)
         self.W_fwd  = np.linalg.pinv(self.A_mat) @ self.B_mat
-        self.W_back = np.linalg.pinv(self.B_mat) @ self.A_mat
+        
+        if self.bidirectional:
+            self.W_back = np.linalg.pinv(self.B_mat) @ self.A_mat
+        
         self._fitted = True
 
     # ── Inferencia ───────────────────────────────────────────────
@@ -232,6 +239,11 @@ class BAN:
 
     # ── API inversa: label → imagen ──────────────────────────────
     def get_image_from_label(self, label: str, save: bool = True) -> Image.Image:
+        if not self.bidirectional:
+            raise RuntimeError(
+                "W_back no disponible. Instancia BAN con bidirectional=True."
+            )
+        
         label = label.strip().lower()
         if label not in self._canonical_A:
             raise ValueError(f"Etiqueta desconocida: '{label}'. Disponibles: {self.labels}")
@@ -252,7 +264,7 @@ class BAN:
         print(f"   Muestras  : {len(self._A_rows)}")
         if self._fitted:
             print(f"   W_fwd     : {self.W_fwd.shape}")
-            print(f"   W_back    : {self.W_back.shape}")
+            print(f"   W_back    : {self.W_back.shape if self.bidirectional else 'deshabilitado'}")
         else:
             print("   Estado    : sin entrenar")
         print("─────────────────────────────────────────────────────\n")
@@ -266,7 +278,9 @@ class BAN:
 
         A_rows_mb    = sum(v.nbytes for v in self._A_rows)    / 1024 / 1024
         B_rows_mb    = sum(v.nbytes for v in self._B_rows)    / 1024 / 1024
-        canonical_mb = sum(v.nbytes for v in self._canonical_A.values()) / 1024 / 1024
+        canonical_mb = sum(v.nbytes for v in self._canonical_A.values()) / 1024 / 1024 \
+               if self.bidirectional else 0
+               
 
         total = (A_rows_mb + B_rows_mb + canonical_mb +
                 mb(self.W_fwd) + mb(self.W_back) +
@@ -275,9 +289,9 @@ class BAN:
         report = {
             "_A_rows"      : f"{A_rows_mb:.2f} MB",
             "_B_rows"      : f"{B_rows_mb:.2f} MB",
-            "_canonical_A" : f"{canonical_mb:.2f} MB",
+            "_canonical_A" : f"{canonical_mb:.2f} MB" if self.bidirectional else "deshabilitado",
             "W_fwd"        : f"{mb(self.W_fwd):.2f} MB",
-            "W_back"       : f"{mb(self.W_back):.2f} MB",
+            "W_back" : f"{mb(self.W_back):.2f} MB" if self.bidirectional else "deshabilitado",
             "A_mat"        : f"{mb(self.A_mat):.2f} MB",
             "B_mat"        : f"{mb(self.B_mat):.2f} MB",
             "TOTAL"        : f"{total:.2f} MB",

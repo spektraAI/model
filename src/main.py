@@ -9,7 +9,7 @@ INPUT_PATH = ruta_actual / "input"
 OUTPUT_PATH = ruta_actual / "output"
 
 
-ban = BAN()
+ban = BAN(bidirectional=False)
 
 frase = "a car is a road vehicle that is powered by an engine and is able to carry a small number of people."
 chunks = []
@@ -24,7 +24,7 @@ def construir_frases(frase):
     for i in range(0, len(palabras) + 1):
         frs = " ".join(palabras[:i])
         chunks.append(frs)
-        word_to_image(path=INPUT_PATH, filename=str(i), frase=frs, padding=10, wrap=True, size=(RETINA), fuente_size=16)
+        word_to_image(path=INPUT_PATH, filename=str(i), frase=frs, padding=10, wrap=True, size=(RETINA), fuente_size=12)
     
 
 def entrenar_memoria():
@@ -52,18 +52,15 @@ def reconstruir_frase(clasificacion):
 
     return result, " ".join(result)
 
-def detectar_frase():
-    result = ban.classify_("3.png")
-    words, sentence = reconstruir_frase(result)
-    print(f"{sentence}")    
 
-def extraer_imagen_label():
-    ban.get_image_from_label("a car is a road vehicle")
+
+
+
+
 
 construir_frases(frase)
 entrenar_memoria()
-detectar_frase()
-extraer_imagen_label()
+
 
 
 

@@ -1,21 +1,3 @@
-"""
-BAN — Bidirectional Associative Network (imagen única por patrón)
-=================================================================
-A diferencia de BAM Vision (que entrena con augmentation masiva),
-BAN almacena pares (imagen → label) individuales y reconstruye
-la imagen original exacta usando W_back = B⁺·A.
-
-API
----
-    ban = BAN()
-    ban.train_from_("carro.png",   "carro")
-    ban.train_from_("manzana.png", "manzana")
-    ban.train_from_("pera.png",    "pera")
-
-    label, scores = ban.classify_("test.png")
-    img           = ban.get_image_from_label("carro")
-"""
-
 import pickle
 from typing import Tuple
 import numpy as np

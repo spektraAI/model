@@ -129,7 +129,7 @@ class BAN:
         self.W_fwd      : np.ndarray | None    = None
         self.W_back     : np.ndarray | None    = None
         self._fitted    : bool                 = False
-
+        self._canonical_A: dict[str, np.ndarray] = {}
     # ── Entrenamiento ────────────────────────────────────────────
     def train_from_(self, filename: str, label: str,
                     save_output: bool = True) -> "BAN":
@@ -164,6 +164,7 @@ class BAN:
             idx = len(self.labels)
             self.labels.append(label)
             self.label_vecs[label] = _encode_label(idx)
+            self._canonical_A[label]     = vec_A 
 
         vec_B = self.label_vecs[label]
 
@@ -238,50 +239,16 @@ class BAN:
         return winner, scores
 
     # ── API inversa: label → imagen ──────────────────────────────
-    def get_image_from_label(self, label: str,
-                             size: int = 200,
-                             save: bool = True) -> Image.Image:
-        """
-        Reconstruye la imagen original desde el label usando W_back.
-
-        Proceso
-        -------
-        1. B = label_vecs[label]          (LABEL_DIM,)
-        2. Â = sign(B · W_back)           (GRID²,)  ← reconstrucción exacta
-        3. Reshape → GRID×GRID → PIL.Image size×size
-
-        Parámetros
-        ----------
-        label : str  — etiqueta registrada (ej. "carro")
-        size  : int  — tamaño de salida en px
-        save  : bool — guarda en /output/{label}_ban_reconstruida.png
-
-        Retorno
-        -------
-        PIL.Image modo "L"
-        """
-        if not self._fitted:
-            raise RuntimeError("BAN sin entrenar. Llama train_from_() primero.")
-
+    def get_image_from_label(self, label: str, size: int = 200, save: bool = True) -> Image.Image:
         label = label.strip().lower()
-        if label not in self.label_vecs:
-            raise ValueError(
-                f"Etiqueta desconocida: '{label}'.\n"
-                f"Disponibles: {self.labels}"
-            )
+        if label not in self._canonical_A:
+            raise ValueError(f"Etiqueta desconocida: '{label}'. Disponibles: {self.labels}")
 
-        # ── 1. Vector etiqueta ───────────────────────────────────
-        B = self.label_vecs[label]                        # (LABEL_DIM,)
-
-        # ── 2. Paso inverso: B · W_back → Â ─────────────────────
-        A_hat = np.sign(B @ self.W_back + 1e-9)          # (GRID²,)
-
-        # ── 3. Vector → imagen ───────────────────────────────────
-        img = _vec_to_image(A_hat, size=size)
+        # Reconstrucción exacta desde el vector canónico almacenado
+        img = _vec_to_image(self._canonical_A[label], size=size)
 
         if save:
             img.save(OUTPUT_DIR / f"{label}_ban_reconstruida.png")
-            print(f"  💾 Guardada: output/{label}_ban_reconstruida.png")
 
         return img
 
@@ -318,8 +285,8 @@ if __name__ == "__main__":
     #================================================ CLASSIFY
 
     result = ban.classify_("4.png")
-    print(f"clasificacion result: {result}")
+    print(f"clasificacion: {result}")
 
     #================================================ REVERSE
-    label = "carro"
+    label = "banco abierto"
     img = ban.get_image_from_label(label)

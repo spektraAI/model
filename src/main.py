@@ -29,6 +29,7 @@ def entrenar_memoria():
         ban.train_from_(filename=f"{i}.png", label=p, spatial=True)
         
     ban.summary()
+    ban.memory_usage()
 
 
 def detectar_frase():

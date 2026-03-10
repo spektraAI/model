@@ -259,6 +259,41 @@ class BAN:
         print("─────────────────────────────────────────────────────\n")
 
 
+    def memory_usage(self) -> dict:
+        """
+        Retorna un resumen de la memoria en uso por la instancia BAN.
+        """
+        def mb(arr): return arr.nbytes / 1024 / 1024 if arr is not None else 0
+
+        A_rows_mb    = sum(v.nbytes for v in self._A_rows)    / 1024 / 1024
+        B_rows_mb    = sum(v.nbytes for v in self._B_rows)    / 1024 / 1024
+        canonical_mb = sum(v.nbytes for v in self._canonical_A.values()) / 1024 / 1024
+
+        total = (A_rows_mb + B_rows_mb + canonical_mb +
+                mb(self.W_fwd) + mb(self.W_back) +
+                mb(self.A_mat) + mb(self.B_mat))
+
+        report = {
+            "_A_rows"      : f"{A_rows_mb:.2f} MB",
+            "_B_rows"      : f"{B_rows_mb:.2f} MB",
+            "_canonical_A" : f"{canonical_mb:.2f} MB",
+            "W_fwd"        : f"{mb(self.W_fwd):.2f} MB",
+            "W_back"       : f"{mb(self.W_back):.2f} MB",
+            "A_mat"        : f"{mb(self.A_mat):.2f} MB",
+            "B_mat"        : f"{mb(self.B_mat):.2f} MB",
+            "TOTAL"        : f"{total:.2f} MB",
+        }
+
+        print("\n── BAN Memory Usage ─────────────────────────────────")
+        for k, v in report.items():
+            sep = "─" * 40 if k == "TOTAL" else ""
+            if sep: print(sep)
+            print(f"   {k:<16} {v:>10}")
+        print("─────────────────────────────────────────────────────\n")
+
+        return report
+
+
 # ─────────────────────────────────────────────────────────────────
 # Ejemplo de uso
 # ─────────────────────────────────────────────────────────────────

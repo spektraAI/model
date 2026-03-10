@@ -168,6 +168,9 @@ class BAN:
         self.W_fwd = np.linalg.pinv(A_dense) @ B_dense
 
         self._fitted = True
+        
+        self.A_mat = None  
+        self.B_mat = None
 
     # ── Inferencia ───────────────────────────────────────────────
     def _forward(self, A) -> np.ndarray:

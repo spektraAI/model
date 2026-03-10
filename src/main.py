@@ -1,6 +1,7 @@
 from pathlib import Path
 from src.neuron.memory import BAN
 from src.utils import word_to_image
+from collections import Counter
 
 ruta_actual = Path.cwd()
 
@@ -11,7 +12,7 @@ OUTPUT_PATH = ruta_actual / "output"
 ban = BAN()
 
 frase = "a car is a road vehicle that is powered by an engine and is able to carry a small number of people."
-chuncks = []
+chunks = []
 
 RETINA_W = 28 * 8
 
@@ -22,23 +23,39 @@ def construir_frases(frase):
     
     for i in range(0, len(palabras) + 1):
         frs = " ".join(palabras[:i])
-        chuncks.append(frs)
+        chunks.append(frs)
         word_to_image(path=INPUT_PATH, filename=str(i), frase=frs, padding=10, wrap=True, size=(RETINA), fuente_size=16)
     
-    print(chuncks)    
-     
 
 def entrenar_memoria():
-    for i, p in enumerate(chuncks):
+    for i, p in enumerate(chunks):
         ban.train_from_(filename=f"{i}.png", label=p, spatial=True)
         
     ban.summary()
     ban.memory_usage()
 
+def reconstruir_frase(clasificacion):
+    prefix, frases_scores = clasificacion
+
+    # obtener frases válidas
+    sentences = [s for s in frases_scores.keys() if s.strip()]
+
+    split_sentences = [s.split() for s in sentences]
+    max_len = max(len(s) for s in split_sentences)
+
+    result = []
+
+    for i in range(max_len):
+        words = [s[i] for s in split_sentences if len(s) > i]
+        word = Counter(words).most_common(1)[0][0]
+        result.append(word)
+
+    return result, " ".join(result)
 
 def detectar_frase():
     result = ban.classify_("3.png")
-    print(f"clasificacion: {result}")    
+    words, sentence = reconstruir_frase(result)
+    print(f"{sentence}")    
 
 def extraer_imagen_label():
     ban.get_image_from_label("a car is a road vehicle")
@@ -47,3 +64,6 @@ construir_frases(frase)
 entrenar_memoria()
 detectar_frase()
 extraer_imagen_label()
+
+
+

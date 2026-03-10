@@ -225,9 +225,8 @@ class BAN:
             print(f"\n🏆 Label   : {winner}")
             print("📊 Scores  :")
             for lbl, score in sorted(scores.items(), key=lambda x: -x[1]):
-                bar    = "█" * int((score + 1) / 2 * 20)
                 marker = " ← ganador" if lbl == winner else ""
-                print(f"   {lbl:<14} {score:+.4f}  {bar}{marker}")
+                print(f"   {lbl:<14} {score:+.4f} {marker}")
 
         return winner, scores
 

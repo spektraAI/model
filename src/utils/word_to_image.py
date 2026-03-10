@@ -10,6 +10,12 @@ Argumentos:
     padding  : espacio en píxeles alrededor del texto
                si es 1 la imagen se ajusta exactamente al contenido con 1 px de margen
     wrap     : si True, hace wrap del texto para que la imagen sea cuadrada
+    size     : (ancho, alto) o int para cuadrado — define un lienzo fijo.
+               Con size, todas las imágenes tienen el mismo tamaño y el texto
+               siempre empieza en las mismas coordenadas (padding, padding),
+               garantizando que las palabras comunes queden alineadas pixel a pixel.
+               wrap=True + size → el texto hace wrap dentro del ancho disponible
+               del lienzo en lugar de buscar proporción cuadrada.
 
 Dependencias:
     pip install Pillow
@@ -23,26 +29,35 @@ from PIL import Image, ImageDraw, ImageFont
 def word_to_image(
     path: str,
     frase: str,
-    filename: str,                  # nombre del archivo de salida (sin o con extensión)
+    filename: str,                           # nombre del archivo de salida
     formato: str = "PNG",
     padding: int = 20,
-    wrap: bool = False,             # True → wrap del texto para imagen cuadrada
+    wrap: bool = False,                      # True → wrap del texto
+    size: tuple[int, int] | int | None = None,  # lienzo fijo; sobreescribe dimensiones calculadas
     # ── Opciones de estilo ──────────────────────────────────────
-    fuente_path: str | None = None, # ruta a un .ttf/.otf; None = fuente por defecto
-    fuente_size: int = 48,          # tamaño en puntos
+    fuente_path: str | None = None,          # ruta a un .ttf/.otf
+    fuente_size: int = 48,
     color_texto: str | tuple = "black",
     color_fondo: str | tuple = "white",
 ) -> Path:
     """
     Genera una imagen que contiene `frase` y la guarda en `path/filename`.
 
-    Con wrap=True el texto se distribuye en múltiples líneas buscando
-    la proporción más cercana a un cuadrado.
+    Cuando `size` está definido:
+      - El lienzo tiene siempre ese tamaño exacto.
+      - El texto se ancla en (padding, padding) — esquina superior izquierda —
+        de modo que palabras comunes quedan en las mismas coordenadas en todas
+        las imágenes generadas con el mismo `size` y `padding`.
+      - Si `wrap=True`, el texto hace wrap dentro del ancho del lienzo.
+      - El texto que supere los límites del lienzo queda recortado.
+
+    Cuando `size=None`:
+      - Sin wrap → imagen ajustada al contenido.
+      - Con wrap → imagen cuadrada calculada automáticamente.
 
     Returns
     -------
-    Path
-        Ruta absoluta del archivo creado.
+    Path  Ruta absoluta del archivo creado.
     """
 
     # ── Validar formato ─────────────────────────────────────────
@@ -54,6 +69,17 @@ def word_to_image(
             f"Usa uno de: {', '.join(sorted(FORMATOS_SOPORTADOS))}"
         )
     fmt_pillow = "JPEG" if fmt == "JPG" else fmt
+
+    # ── Normalizar size ──────────────────────────────────────────
+    if size is not None:
+        if isinstance(size, int):
+            canvas_w, canvas_h = size, size
+        else:
+            canvas_w, canvas_h = int(size[0]), int(size[1])
+        if canvas_w < 1 or canvas_h < 1:
+            raise ValueError(f"size debe ser >= 1 px, recibido: {size}")
+    else:
+        canvas_w = canvas_h = None
 
     # ── Resolver dest ────────────────────────────────────────────
     dest = Path(path)
@@ -80,67 +106,105 @@ def word_to_image(
         except (IOError, OSError):
             font = ImageFont.load_default()
 
-    # ── Helper: medir un bloque de texto ────────────────────────
+    # ── Helper: medir texto multilínea ──────────────────────────
     _dummy_draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
 
     def medir(texto: str) -> tuple[int, int, int, int]:
-        """Devuelve (w, h, offset_x, offset_y) del texto."""
+        """Devuelve (w, h, offset_x, offset_y) del bbox del texto."""
         bb = _dummy_draw.multiline_textbbox((0, 0), texto, font=font, spacing=4)
         return bb[2] - bb[0], bb[3] - bb[1], -bb[0], -bb[1]
 
-    # ── Calcular layout ──────────────────────────────────────────
-    if not wrap:
-        # ── Sin wrap: una sola línea ─────────────────────────────
-        text_w, text_h, offset_x, offset_y = medir(frase)
-        texto_final = frase
-        img_w = text_w + padding * 2
-        img_h = text_h + padding * 2
-
-    else:
-        # ── Con wrap: buscar el ancho de línea que produce imagen más cuadrada
-        palabras = frase.split()
-
-        def wrap_en(max_chars: int) -> str:
-            """Hace wrap simple por número máximo de caracteres por línea."""
-            lineas, linea = [], ""
-            for palabra in palabras:
-                candidata = (linea + " " + palabra).strip()
-                if len(candidata) <= max_chars or not linea:
-                    linea = candidata
-                else:
-                    lineas.append(linea)
-                    linea = palabra
-            if linea:
+    # ── Helper: wrap por píxeles (respeta el ancho real del lienzo) ──
+    def wrap_por_pixels(texto: str, ancho_max: int) -> str:
+        """Parte el texto en líneas que quepan en ancho_max píxeles."""
+        palabras = texto.split()
+        lineas: list[str] = []
+        linea = ""
+        for palabra in palabras:
+            candidata = (linea + " " + palabra).strip()
+            w, _, _, _ = medir(candidata)
+            if w <= ancho_max or not linea:
+                linea = candidata
+            else:
                 lineas.append(linea)
-            return "\n".join(lineas)
+                linea = palabra
+        if linea:
+            lineas.append(linea)
+        return "\n".join(lineas)
 
-        total_chars = len(frase)
-        mejor_texto = frase
+    # ── Helper: wrap por cuadrado (minimiza diferencia w/h) ─────
+    def wrap_cuadrado(texto: str) -> tuple[str, int, int]:
+        """Devuelve (texto_con_saltos, ancho, alto) más cercano a cuadrado."""
+        palabras = texto.split()
+        total_chars = len(texto)
+        mejor_texto = texto
         mejor_diff  = float("inf")
-        mejor_w = mejor_h = 0
-
-        # Medir la frase sin wrap como baseline
-        w0, h0, _, _ = medir(frase)
+        w0, h0, _, _ = medir(texto)
         mejor_w, mejor_h = w0, h0
 
-        # Probar distintos anchos de línea (de 1 palabra a toda la frase)
-        for max_chars in range(1, total_chars + 1):
-            candidato = wrap_en(max_chars)
-            w, h, _, _ = medir(candidato)
+        def wrap_chars(max_c: int) -> str:
+            ls, l = [], ""
+            for p in palabras:
+                c = (l + " " + p).strip()
+                if len(c) <= max_c or not l:
+                    l = c
+                else:
+                    ls.append(l); l = p
+            if l: ls.append(l)
+            return "\n".join(ls)
+
+        for mc in range(1, total_chars + 1):
+            cand = wrap_chars(mc)
+            w, h, _, _ = medir(cand)
             if w == 0 or h == 0:
                 continue
             diff = abs(w - h)
             if diff < mejor_diff:
-                mejor_diff  = diff
-                mejor_texto = candidato
+                mejor_diff = diff
+                mejor_texto = cand
                 mejor_w, mejor_h = w, h
 
-        texto_final = mejor_texto
+        return mejor_texto, max(mejor_w, mejor_h, 1), max(mejor_w, mejor_h, 1)
+
+    # ════════════════════════════════════════════════════════════
+    # ── Calcular layout según combinación size / wrap ─────────
+    # ════════════════════════════════════════════════════════════
+
+    if canvas_w is not None:
+        # ── MODO LIENZO FIJO ─────────────────────────────────────
+        img_w, img_h = canvas_w, canvas_h
+        area_w = canvas_w - padding * 2   # ancho disponible para el texto
+
+        if wrap and area_w > 0:
+            texto_final = wrap_por_pixels(frase, area_w)
+        else:
+            texto_final = frase
+
+        # Posición fija: siempre (padding, padding) → mismas coordenadas en todas las imágenes
         _, _, offset_x, offset_y = medir(texto_final)
-        # El lado del cuadrado es el mayor de los dos ejes + padding
-        # Mínimo garantizado: siempre >= texto + 2*padding
-        lado = max(mejor_w, mejor_h, 1) + padding * 2
-        img_w = img_h = lado  # imagen cuadrada
+        pos_x = padding + offset_x
+        pos_y = padding + offset_y
+        align  = "left"
+
+    elif wrap:
+        # ── MODO AUTO-CUADRADO ───────────────────────────────────
+        texto_final, mejor_w, mejor_h = wrap_cuadrado(frase)
+        lado = mejor_w + padding * 2
+        img_w = img_h = lado
+        tw, th, offset_x, offset_y = medir(texto_final)
+        pos_x  = (img_w - tw) // 2 + offset_x
+        pos_y  = (img_h - th) // 2 + offset_y
+        align  = "center"
+
+    else:
+        # ── MODO AUTO-RECTANGULAR (sin wrap, sin size) ───────────
+        text_w, text_h, offset_x, offset_y = medir(frase)
+        texto_final = frase
+        img_w = max(text_w + padding * 2, 1)
+        img_h = max(text_h + padding * 2, 1)
+        pos_x  = padding + offset_x
+        pos_y  = padding + offset_y
+        align  = "left"
 
     # ── Crear imagen ─────────────────────────────────────────────
     mode = "RGB" if fmt_pillow in ("JPEG", "BMP", "GIF") else "RGBA"
@@ -150,22 +214,11 @@ def word_to_image(
 
     img  = Image.new(mode, (img_w, img_h), fondo)
     draw = ImageDraw.Draw(img)
-
-    if wrap:
-        # Centrar el bloque de texto dentro del cuadrado
-        tw, th, offset_x, offset_y = medir(texto_final)
-        pos_x = (img_w - tw) // 2 + offset_x
-        pos_y = (img_h - th) // 2 + offset_y
-        draw.multiline_text(
-            (pos_x, pos_y), texto_final,
-            font=font, fill=color_texto,
-            align="center", spacing=4,
-        )
-    else:
-        draw.text(
-            (padding + offset_x, padding + offset_y),
-            texto_final, font=font, fill=color_texto,
-        )
+    draw.multiline_text(
+        (pos_x, pos_y), texto_final,
+        font=font, fill=color_texto,
+        align=align, spacing=4,
+    )
 
     # ── Guardar ─────────────────────────────────────────────────
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -174,8 +227,28 @@ def word_to_image(
         img = img.convert("RGB")
 
     img.save(dest, format=fmt_pillow, **save_kwargs)
-    shape = "cuadrada" if wrap else "rectangular"
-    print(f"✅ Imagen {shape} guardada en: {dest.resolve()}  ({img_w}×{img_h} px)")
+
+    modo_str = (
+        f"lienzo fijo {img_w}×{img_h}" if canvas_w else
+        ("cuadrada auto" if wrap else "rectangular auto")
+    )
+    print(f"✅ [{modo_str}] {dest.resolve()}  ({img_w}×{img_h} px)")
     return dest.resolve()
 
 
+# ── Demo ─────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    import os; os.makedirs("demo", exist_ok=True)
+
+    SIZE = (400, 200)
+
+    # Mismo size → "carro manzana" en las mismas coordenadas en ambas
+    frase_a_imagen(path="demo", frase="carro manzana",       filename="size_a", padding=10, size=SIZE, wrap=True)
+    frase_a_imagen(path="demo", frase="carro manzana nube",  filename="size_b", padding=10, size=SIZE, wrap=True)
+
+    # Sin size: auto
+    frase_a_imagen(path="demo", frase="casa",                filename="auto_rect",   padding=10)
+    frase_a_imagen(path="demo", frase="Hola mundo cuadrado", filename="auto_cuad",   padding=10, wrap=True)
+
+    # size cuadrado como int
+    frase_a_imagen(path="demo", frase="Python rules",        filename="sq256",       padding=12, size=256, wrap=True)

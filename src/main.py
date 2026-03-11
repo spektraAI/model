@@ -102,6 +102,73 @@ def clasificar_documento(imagen: str, verbose: bool = True):
 
     print(f"\n{'═'*55}")
     
+    
+def clasificar_documento_tail(imagen: str):
+    print(f"\n{'═'*55}")
+    print(f"  CONSULTA: {imagen}")
+    print(f"{'═'*55}\n")
+
+    resultados = {}
+
+    for p_idx, red in REDES.items():
+
+        n     = len(red)
+        upstream = [red[j] for j in range(1, n) if j in red]
+
+        if upstream:
+            label, scores, _ = red[n].classify_chained_(
+                imagen, upstream=upstream, verbose=False
+            )
+        else:
+            label, scores = red[n].classify_(imagen, verbose=False)
+
+        ranking = sorted(scores.items(), key=lambda x: -x[1])
+        winner  = ranking[0]
+        second  = ranking[1] if len(ranking) > 1 else None
+        third   = ranking[2] if len(ranking) > 2 else None
+
+        bar   = "█" * int(abs(winner[1]) * 20)
+        linea = f"  P{p_idx}  BAN{n}  {winner[1]:+.4f}  {bar:<20}  \"{winner[0]}\""
+
+        if second:
+            linea += f"   2°: \"{second[0]}\" {second[1]:+.4f}"
+        if third:
+            linea += f"   3°: \"{third[0]}\" {third[1]:+.4f}"
+
+        print(linea)
+        resultados[p_idx] = {"winner": winner, "second": second, "third": third}
+
+    # ── párrafo ganador ──────────────────────────────────────────
+    mejor = max(resultados.items(), key=lambda x: x[1]["winner"][1])
+
+    print(f"\n{'─'*55}")
+    print(f"  ➤  Párrafo más cercano : P{mejor[0]}")
+    print(f"  ➤  Label               : \"{mejor[1]['winner'][0]}\"")
+    print(f"  ➤  Score               : {mejor[1]['winner'][1]:+.4f}")
+    print(f"{'═'*55}\n")
+
+    return resultados    
+
+
+def clasificar_consenso(imagen: str, red: dict) -> str:
+    votos = {}
+
+    for i in range(1, len(red) + 1):
+        upstream = [red[j] for j in range(1, i) if j in red]
+
+        if upstream:
+            label, scores, _ = red[i].classify_chained_(
+                imagen, upstream=upstream, verbose=False
+            )
+        else:
+            label, scores = red[i].classify_(imagen, verbose=False)
+
+        votos[label] = votos.get(label, 0) + scores[label]
+
+    ganador = max(votos, key=votos.get)
+    return ganador
+    
+    
 def memoria_documento():
     print(f"\n{'═'*55}")
     print(f"  MEMORIA TOTAL DEL DOCUMENTO")

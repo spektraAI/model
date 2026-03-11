@@ -35,7 +35,7 @@ def _preprocess(image_input) -> Tuple[sp.csr_matrix, Tuple[int,int]]:
     arr = np.array(img, dtype=float)
     size = img.size
     
-    vec = np.where(arr < arr.mean(), 1.0, -1.0).flatten()
+    vec = np.where(arr < arr.mean(), 1.0, 0.0).flatten()
     
     result = sp.csr_matrix(vec)
     
@@ -52,7 +52,7 @@ def _vec_to_image(vec, size: Tuple[int,int] = (200,200)) -> Image.Image:
     if sp.issparse(vec):
         vec = vec.toarray().flatten()
     grid     = vec.reshape(GRID, GRID)
-    arr      = ((1 - grid) / 2 * 255).astype(np.uint8)
+    arr = ((1 - grid) * 255).astype(np.uint8)
     img_small = Image.fromarray(arr, mode="L")
     img_small = img_small.filter(ImageFilter.GaussianBlur(radius=0.6))
     img_out   = img_small.resize((size), Image.LANCZOS)
@@ -171,10 +171,10 @@ class BAN:
 
     # ── Inferencia ───────────────────────────────────────────────
     def _forward(self, A) -> np.ndarray:
-        # ── Convertir sparse a denso antes de multiplicar ────────────
         if sp.issparse(A):
             A = A.toarray().flatten()
-        return np.sign(A @ self.W_fwd + 1e-9)
+        raw = A @ self.W_fwd
+        return np.where(raw >= 0, 1.0, -1.0) 
 
     def classify_(self, image_input,
                   verbose: bool = True) -> tuple[str, dict]:
@@ -236,11 +236,11 @@ class BAN:
         A_rows_mb    = sum(mb_sparse(v) for v in self._A_rows)
         B_rows_mb    = sum(v.nbytes for v in self._B_rows)      / 1024 / 1024
 
-        total = (A_rows_mb + B_rows_mb  +
+        total = (A_rows_mb + B_rows_mb +
                 mb(self.W_fwd) +
-                mb_sparse(self.A_mat) if sp.issparse(self.A_mat) else mb(self.A_mat) +
+                (mb_sparse(self.A_mat) if sp.issparse(self.A_mat) else mb(self.A_mat)) +
                 mb(self.B_mat))
-
+    
         report = {
             "_A_rows"      : f"{A_rows_mb:.2f} MB",
             "_B_rows"      : f"{B_rows_mb:.2f} MB",

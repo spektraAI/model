@@ -35,7 +35,7 @@ def _preprocess(image_input) -> Tuple[sp.csr_matrix, Tuple[int,int]]:
     arr = np.array(img, dtype=float)
     size = img.size
     
-    vec = np.where(arr < arr.mean(), 1.0, 0.0).flatten()
+    vec = np.where(arr < arr.mean(), 1.0, -1.0).flatten()
     
     result = sp.csr_matrix(vec)
     
@@ -52,7 +52,7 @@ def _vec_to_image(vec, size: Tuple[int,int] = (200,200)) -> Image.Image:
     if sp.issparse(vec):
         vec = vec.toarray().flatten()
     grid     = vec.reshape(GRID, GRID)
-    arr = ((1 - grid) * 255).astype(np.uint8)
+    arr = ((1 - grid) / 2 * 255).astype(np.uint8)
     img_small = Image.fromarray(arr, mode="L")
     img_small = img_small.filter(ImageFilter.GaussianBlur(radius=0.6))
     img_out   = img_small.resize((size), Image.LANCZOS)
@@ -174,7 +174,7 @@ class BAN:
         if sp.issparse(A):
             A = A.toarray().flatten()
         raw = A @ self.W_fwd
-        return np.where(raw >= 0, 1.0, -1.0) 
+        return np.where(raw >= 0, 1.0, -1.0)
 
     def classify_(self, image_input,
                   verbose: bool = True) -> tuple[str, dict]:

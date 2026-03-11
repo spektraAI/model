@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.3.5)  11 MAR 2026 16:07
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.3.5)  11 MAR 2026 16:57
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -761,16 +761,15 @@ Overfull \hbox (10.88148pt too wide) in paragraph at lines 375--375
  []
 
 
+
+[8]
 Overfull \hbox (1.60704pt too wide) in paragraph at lines 386--394
  [][] 
  []
 
 
-LaTeX Warning: `h' float specifier changed to `ht'.
 
-
-
-[8]
+[9]
 Underfull \hbox (badness 10000) in paragraph at lines 424--424
 []\OT1/cmr/bx/n/12 LLM (GPT, Claude,
  []
@@ -907,23 +906,18 @@ Underfull \hbox (badness 5711) in paragraph at lines 432--432
  []
 
 
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-
-
-[9]
 
 [10]
 
 [11]
+
+[12]
 Overfull \hbox (12.50787pt too wide) in paragraph at lines 534--534
 |[]\OT1/cmr/bx/n/17.28 Protocolos de Co-mu-ni-caci^^Son y Din^^Samica de Se~nal
 es| 
  []
 
 
-
-[12]
 
 [13]
 Overfull \hbox (49.29372pt too wide) in paragraph at lines 575--576
@@ -932,42 +926,45 @@ Sultiples sub-conceptos $\OMS/cmsy/m/n/12 f[]g$\OT1/cmr/m/n/12 ,
  []
 
 
+
+[14]
 Overfull \hbox (13.22998pt too wide) in paragraph at lines 582--582
 |[]\OT1/cmr/bx/n/17.28 Resoluci^^Son de Lim-ita-ciones Intr^^S^^Pnsecas de los 
 LLMs
  []
 
 
-
-[14]
 Overfull \hbox (1.79816pt too wide) in paragraph at lines 598--598
 |[]\OT1/cmr/bx/n/14.4 Eficiencia Com-puta-cional y Ac-tu-al-izaci^^Son de Conoc
 imiento| 
  []
 
 
+
+[15]
 Overfull \hbox (49.29372pt too wide) in paragraph at lines 615--616
 \OT1/cmr/m/n/12 Dado que la definici^^Son de un con-cepto "Carro" con-tiene m^^
 Sultiples sub-conceptos $\OMS/cmsy/m/n/12 f[]g$\OT1/cmr/m/n/12 ,
  []
 
 
-
-[15]
 Overfull \hbox (13.22998pt too wide) in paragraph at lines 623--623
 |[]\OT1/cmr/bx/n/17.28 Resoluci^^Son de Lim-ita-ciones Intr^^S^^Pnsecas de los 
 LLMs
  []
 
 
+
+[16]
 Overfull \hbox (1.79816pt too wide) in paragraph at lines 639--639
 |[]\OT1/cmr/bx/n/14.4 Eficiencia Com-puta-cional y Ac-tu-al-izaci^^Son de Conoc
 imiento| 
  []
 
 
+LaTeX Warning: `h' float specifier changed to `ht'.
 
-[16]
+
 
 [17]
 Overfull \hbox (24.0299pt too wide) in paragraph at lines 757--759
@@ -1012,14 +1009,14 @@ OT1/cmr/m/n/12 )$
  []
 
 
+
+[20]
 Overfull \hbox (16.22179pt too wide) in paragraph at lines 852--852
 |[]\OT1/cmr/bx/n/17.28 Metodolog^^S^^Pa de En-tre-namiento: Op-ti-mizaci^^Son M
 ul-
  []
 
 
-
-[20]
 Overfull \hbox (12.10164pt too wide) in paragraph at lines 858--858
 |[]\OT1/cmr/bx/n/14.4 Fase 2: Apren-dizaje de Micro-Pesos (Back-prop-a-ga-tion 
 Com-
@@ -1040,6 +1037,8 @@ al-ida (\OT1/cmr/m/it/12 In-put/Out-put Gates\OT1/cmr/m/n/12 ) mantienen
 [23]
 
 [24]
+
+[25]
 Overfull \hbox (30.15584pt too wide) in paragraph at lines 993--993
 |[]\OT1/cmr/bx/n/17.28 Conclusi^^Son: Ha-cia una In-teligen-cia Post-Transforme
 r| 
@@ -1053,7 +1052,7 @@ r ``on-the-fly'' sin sufrir olvido catatr^^Sofico
 
 
 
-[25]
+[26]
 Overfull \hbox (4.59853pt too wide) in paragraph at lines 1022--1023
 []\OT1/cmr/bx/n/12 Punteros On-tol^^Sogicos (In-muta-bles): \OT1/cmr/m/n/12 Der
 iva-dos de la definici^^Son base (ej. ``Perro''
@@ -1061,11 +1060,11 @@ iva-dos de la definici^^Son base (ej. ``Perro''
 
 
 
-[26]
-
 [27]
 
-[28] (./README.aux)
+[28]
+
+[29] (./README.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -1074,7 +1073,7 @@ L3 programming layer <2025-01-18>
 Here is how much of TeX's memory you used:
  22196 strings out of 475178
  479519 string characters out of 5766540
- 903652 words of memory out of 5000000
+ 902652 words of memory out of 5000000
  44809 multiletter control sequences out of 15000+600000
  578989 words of font info for 110 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
@@ -1099,10 +1098,10 @@ exlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texlive
 -dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texlive/texmf-dist/
 fonts/type1/public/amsfonts/cm/cmtt8.pfb></usr/share/texlive/texmf-dist/fonts/t
 ype1/public/amsfonts/symbols/msbm10.pfb>
-Output written on README.pdf (28 pages, 335415 bytes).
+Output written on README.pdf (29 pages, 335663 bytes).
 PDF statistics:
- 241 PDF objects out of 1000 (max. 8388607)
- 142 compressed objects within 2 object streams
+ 244 PDF objects out of 1000 (max. 8388607)
+ 144 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  157 words of extra memory for PDF output out of 10000 (max. 10000000)
 

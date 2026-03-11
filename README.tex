@@ -62,6 +62,95 @@ But in the student's example, it was only done once. From this action, we can co
 \item It is possible to hypothesize that there is an energy pulse. This pulse travels through the associated neurons, allowing them to be activated and to recall the definition in the original order.
 \end{itemize}
 
+
+
+\section*{Potencia de la Última Capa en una Red BAN Encadenada}
+
+Sea una red de $N$ memorias asociativas bidireccionales $\{\mathcal{B}_1, \mathcal{B}_2, \dots, \mathcal{B}_N\}$
+entrenadas sobre un conjunto de imágenes de dimensión fija $\sqrt{d} \times \sqrt{d}$ píxeles,
+con $d = 38416$ y fondo blanco uniforme. Dado que todas las imágenes comparten el mismo tamaño
+cuadrado, la única fuente de variación entre patrones es la \textbf{distribución espacial de los
+	píxeles negros}, determinada por el contenido textual de cada fragmento. Sea $\mathbf{x}_k \in \{0,1\}^{d}$
+el vector binarizado de la imagen $k$-ésima, donde $x_{k,i} = 1$ indica píxel negro en la posición $i$.
+La densidad de píxeles activos de cada patrón es:
+
+\begin{equation}
+	\rho_k = \frac{1}{d} \sum_{i=1}^{d} x_{k,i} \in [0, 1]
+\end{equation}
+
+Dado que los fragmentos textuales son visualmente distintos — misma resolución, distinto contenido —
+se cumple que:
+
+\begin{equation}
+	\rho_i \neq \rho_j \quad \text{y} \quad
+	\mathbf{x}_i \neq \mathbf{x}_j \quad \forall\, i \neq j
+\end{equation}
+
+Esta distinción garantiza que la primera capa $\mathcal{B}_1$, cuya matriz de pesos se obtiene por
+pseudo-inversa de Moore-Penrose $\mathbf{W}_1 = \mathbf{A}_1^{+} \mathbf{B}_1 \in \mathbb{R}^{d \times m}$
+con $m = 352$, produce firmas separables:
+
+\begin{equation}
+	\hat{\mathbf{b}}_1^{(k)} = \text{sign}\!\left(\mathbf{x}_k \, \mathbf{W}_1\right)
+	\in \{-1, +1\}^{m}
+\end{equation}
+
+\begin{equation}
+	d_H\!\left(\hat{\mathbf{b}}_1^{(i)},\, \hat{\mathbf{b}}_1^{(j)}\right) > 0
+	\quad \forall\, i \neq j
+\end{equation}
+
+donde $d_H$ denota la distancia de Hamming entre vectores bipolares. Nótese que si las imágenes
+fueran acumulativas — es decir, si el patrón $k$ contuviese visualmente al patrón $k-1$ — esta
+condición no se cumpliría, pues las firmas tenderían a colapsar. Al ser imágenes de igual tamaño
+con contenido textual propio, cada $\mathbf{x}_k$ ocupa una región distinta del espacio $\{0,1\}^d$
+y la separabilidad se preserva.
+
+Cada capa subsecuente $\mathcal{B}_n$ opera exclusivamente en el espacio comprimido
+$\{-1,+1\}^m$, aplicando su propia transformación aprendida:
+
+\begin{equation}
+	\hat{\mathbf{b}}_n^{(k)} = \text{sign}\!\left(\hat{\mathbf{b}}_{n-1}^{(k)} \, \mathbf{W}_n\right),
+	\quad \mathbf{W}_n = \mathbf{A}_n^{+} \mathbf{B}_n \in \mathbb{R}^{m \times m}
+\end{equation}
+
+La representación final en la capa $\mathcal{B}_N$ es la composición de toda la cadena:
+
+\begin{equation}
+	\hat{\mathbf{b}}_N^{(k)} = \text{sign}\!\left(
+	\text{sign}\!\left( \cdots
+	\text{sign}\!\left(\mathbf{x}_k \, \mathbf{W}_1\right)
+	\mathbf{W}_2 \cdots \right)
+	\mathbf{W}_N \right)
+\end{equation}
+
+Puesto que el tamaño fijo de las imágenes elimina la dimensión como factor de confusión,
+la separabilidad inicial $d_H > 0$ se amplifica a través de los $N$ niveles de transformación,
+satisfaciendo:
+
+\begin{equation}
+	d_H\!\left(\hat{\mathbf{b}}_N^{(i)},\, \hat{\mathbf{b}}_N^{(j)}\right)
+	\geq d_H\!\left(\hat{\mathbf{b}}_1^{(i)},\, \hat{\mathbf{b}}_1^{(j)}\right)
+	\quad \forall\, i \neq j
+\end{equation}
+
+La clasificación final se realiza por similitud coseno sobre las representaciones de $\mathcal{B}_N$:
+
+\begin{equation}
+	s_c = \frac{\hat{\mathbf{b}}_N \cdot \boldsymbol{\ell}_c}
+	{\|\hat{\mathbf{b}}_N\| \; \|\boldsymbol{\ell}_c\| + \varepsilon},
+	\quad \hat{c} = \arg\max_{c}\, s_c
+\end{equation}
+
+El margen entre el ganador y el segundo clasificado en $\mathcal{B}_N$ es máximo precisamente
+porque las imágenes de igual tamaño con contenido distinto producen firmas que maximizan
+$d_H$ a lo largo de la cadena. Por tanto, $\mathcal{B}_N$ es la capa más discriminativa
+y confiable de toda la red cuando se garantiza diversidad visual bajo resolución fija.
+
+
+
+
+
 I've always wondered how the brain performs complex mathematical calculations at the neuronal level. How can a group of neurons perform a calculation? It can't be any other way than that neurons have logical properties. That is, an individual neuron is a NAND logic gate.
 
 

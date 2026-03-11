@@ -11,55 +11,57 @@ GRID = 28 * 7
 RETINA = (GRID, GRID)
 
 RED1= {}
-frase1 = "a car is a road vehicle that is powered by an engine and is able to carry a small number of people."
-frase1_chunks = []
+frase1 = "a car is a road vehicle"
 
 def preprocesar_texto(frase):
     palabras = frase.split()
+    resultado_tuplas = [] # Aquí guardaremos las tuplas (img, label)
     
-    for i in range(0, len(palabras) + 1):
+    for i in range(1, len(palabras) + 1):
+        # 1. Construimos el fragmento de la frase
         frs = " ".join(palabras[:i])
-        frase1_chunks.append(frs)
+        
+        # 2. Creamos la tupla y la añadimos a la lista
+        nombre_archivo = f"{i}.png"
+        resultado_tuplas.append((nombre_archivo, frs))
+        
         word_to_image(path=INPUT_PATH, filename=str(i), frase=frs, padding=2, wrap=True, size=(RETINA), fuente_size=12)
-        
-def entrenar_frase1(frase):
-    preprocesar_texto(frase)
+
+    return resultado_tuplas
+
+
+            
+def entrenar_frase1():
+    # Obtenemos [("1.png", "a"), ("2.png", "a car"), ...]
+    resultado = preprocesar_texto(frase1)
     
-    for i, l in enumerate(frase1_chunks):
-        
-        if i == 0:
-            continue
-        
+    for i in range(1, len(resultado) + 1):
         RED1[i] = BAN()
-        print(f"Added BAN: {l}")
+        print(f"\n--- Entrenando BAN{i} con toda la secuencia ---")
+        
+        for _step_idx, (img, label) in enumerate(resultado, 1):
+            # Solo podemos usar como upstream los BANs que ya terminaron 
+            # de crearse en el diccionario RED1
+            nodos_contexto = [RED1[j] for j in range(1, i) if j in RED1]
                 
-        if i == 1:
-            RED1[i].train_from_(filename=f"{i}.png", label=l)
-            print(f"Trained BAN: {l}")
-            continue
-        
-
-        red = list(RED1.values())[:-1]
-        
-        RED1[i].train_from_upstream_(filename=f"{i}.png", label=l, upstream=red)
+            if nodos_contexto:
+                RED1[i].train_from_upstream_(img, label, upstream=nodos_contexto)
+            else:
+                # Si es el BAN1, no tiene upstream, sigue entrenando de forma lineal
+                RED1[i].train_from_(img, label)
 
         
-
-    #ban1.summary()
-    #ban1.memory_usage()
-    #ban3.save("models/ban_v1.pkl")
-
 def detectar_frase():
     red = list(RED1.values())
     ultima_ban = red[-1]
     
-    result = ultima_ban.classify_chained_("1.png",  upstream=red)
-    
+    result = ultima_ban.classify_chained_("2.png",  upstream=red)
     print(result)
+    
 
 
 
-entrenar_frase1(frase1)
+entrenar_frase1()
 detectar_frase()
 
 
@@ -72,7 +74,9 @@ detectar_frase()
 
 
 
-
+    #ban1.summary()
+    #ban1.memory_usage()
+    #ban3.save("models/ban_v1.pkl")
 
 
 def reconstruir_frase(clasificacion):

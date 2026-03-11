@@ -6,7 +6,7 @@ from pathlib import Path
 import scipy.sparse as sp
 
 GRID      = 28 * 7   # retina features
-LABEL_DIM = 32 * 22   #  32 * labels - dims por vector de etiqueta
+LABEL_DIM = 16 * 22   #  * labels - dims por vector de etiqueta
 
 INPUT_DIR  = Path.cwd() / "input"
 OUTPUT_DIR = Path.cwd() / "output"

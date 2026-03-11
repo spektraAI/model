@@ -10,8 +10,13 @@ OUTPUT_PATH = ruta_actual / "output"
 GRID = 28 * 7
 RETINA = (GRID, GRID)
 
-RED1= {}
-frase1 = "a car is a road vehicle"
+REDES = {} 
+
+documento = [
+    "a car is a road vehicle",
+    "a car is used for transportation",
+    "a car has four wheels",
+]
 
 def preprocesar_texto(frase):
     palabras = frase.split()
@@ -29,73 +34,66 @@ def preprocesar_texto(frase):
 
     return resultado_tuplas
 
+def entrenar_frase(red: dict, frase: str):
+    resultado = preprocesar_texto(frase)
 
-            
-def entrenar_frase1():
-    # Obtenemos [("1.png", "a"), ("2.png", "a car"), ...]
-    resultado = preprocesar_texto(frase1)
-    
     for i in range(1, len(resultado) + 1):
-        RED1[i] = BAN()
+        red[i] = BAN()
         print(f"\n--- Entrenando BAN{i} con toda la secuencia ---")
-        
-        for _step_idx, (img, label) in enumerate(resultado, 1):
-            # Solo podemos usar como upstream los BANs que ya terminaron 
-            # de crearse en el diccionario RED1
-            nodos_contexto = [RED1[j] for j in range(1, i) if j in RED1]
-                
+
+        for img, label in resultado:
+            nodos_contexto = [red[j] for j in range(1, i) if j in red]
+
             if nodos_contexto:
-                RED1[i].train_from_upstream_(img, label, upstream=nodos_contexto)
+                red[i].train_from_upstream_(img, label, upstream=nodos_contexto)
             else:
-                # Si es el BAN1, no tiene upstream, sigue entrenando de forma lineal
-                RED1[i].train_from_(img, label)
+                red[i].train_from_(img, label)
 
-        
-def detectar_frase():
-    red = list(RED1.values())
-    ultima_ban = red[-1]
+
+def entrenar_documento():
+    for p_idx, parrafo in enumerate(documento, 1):
+        print(f"\n{'═'*55}")
+        print(f"  PÁRRAFO {p_idx}: '{parrafo}'")
+        print(f"{'═'*55}")
+        REDES[p_idx] = {}
+        entrenar_frase(REDES[p_idx], parrafo)
+
+
+
+def clasificar_documento(imagen: str, verbose: bool = True):
+    print(f"\n{'═'*55}")
+    print(f"  CONSULTA: {imagen}")
+    print(f"{'═'*55}")
+
+    for p_idx, red in REDES.items():
+        print(f"\n  PÁRRAFO {p_idx}")
+        print(f"  {'─'*40}")
+
+        n_bans = len(red)
+
+        for i in range(1, n_bans + 1):
+            upstream = [red[j] for j in range(1, i) if j in red]
+
+            if upstream:
+                label, scores, _ = red[i].classify_chained_(
+                    imagen, upstream=upstream, verbose=False
+                )
+            else:
+                label, scores = red[i].classify_(imagen, verbose=False)
+
+            score_val = scores[label]
+            bar = "█" * int(abs(score_val) * 20)
+            print(f"  BAN{i}  {score_val:+.4f}  {bar:<20}  \"{label}\"")
+
+    print(f"\n{'═'*55}")
+    
+
+entrenar_documento()
+clasificar_documento("3.png")
+
+
+
+
+
 
     
-    winner, scores, intermediate_scores = ultima_ban.classify_chained_("3.png",  upstream=red)
-    print(winner)
-    
-    ultima_ban.summary()
-    ultima_ban.memory_usage()
-    
-
-
-
-entrenar_frase1()
-detectar_frase()
-
-
-
-
-
-
-
-
-
-
-
-
-    #ban3.save("models/ban_v1.pkl")
-
-
-def reconstruir_frase(clasificacion):
-    prefix, frases_scores = clasificacion
-    # add temperature
-    # obtener frases válidas
-    sentences = [s for s in frases_scores.keys() if s.strip()]
-
-    split_sentences = [s.split() for s in sentences]
-    max_len = max(len(s) for s in split_sentences)
-
-    result = []
-
-    for i in range(max_len):
-        words = [s[i] for s in split_sentences if len(s) > i]
-        word = Counter(words).most_common(1)[0][0]
-        result.append(word)
-
-    return result, " ".join(result)

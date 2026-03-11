@@ -13,7 +13,7 @@ RETINA = (GRID, GRID)
 REDES = {} 
 
 documento = [
-    "a car is a road vehicle",
+    "a cat with four wheels",
     "a car is used for transportation",
     "a car has four wheels",
 ]
@@ -81,16 +81,31 @@ def clasificar_documento(imagen: str, verbose: bool = True):
             else:
                 label, scores = red[i].classify_(imagen, verbose=False)
 
-            score_val = scores[label]
-            bar = "█" * int(abs(score_val) * 20)
-            print(f"  BAN{i}  {score_val:+.4f}  {bar:<20}  \"{label}\"")
+            # ── ordenar scores de mayor a menor ─────────────────
+            ranking = sorted(scores.items(), key=lambda x: -x[1])
+
+            winner       = ranking[0]
+            second       = ranking[1] if len(ranking) > 1 else None
+            third       = ranking[2] if len(ranking) > 1 else None
+            
+            bar = "█" * int(abs(winner[1]) * 20)
+
+            linea = f"  BAN{i}  {winner[1]:+.4f}  {bar:<20}  \"{winner[0]}\""
+
+            if second:
+                linea += f"   2°: \"{second[0]}\" {second[1]:+.4f}"
+                
+            if third:
+                linea += f"   3°: \"{third[0]}\" {third[1]:+.4f}"
+                
+            print(linea)
 
     print(f"\n{'═'*55}")
     
 
 entrenar_documento()
 print(REDES)
-clasificar_documento("3.png")
+clasificar_documento("2.png")
 
 
 

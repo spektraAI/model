@@ -10,41 +10,70 @@ OUTPUT_PATH = ruta_actual / "output"
 GRID = 28 * 7
 RETINA = (GRID, GRID)
 
-frase = "the car is"
-chunks = []
-
-
-ban1 = BAN()
-ban2 = BAN()
-ban3 = BAN()
+RED1= {}
+frase1 = "a car is a road vehicle that is powered by an engine and is able to carry a small number of people."
+frase1_chunks = []
 
 def preprocesar_texto(frase):
     palabras = frase.split()
     
     for i in range(0, len(palabras) + 1):
         frs = " ".join(palabras[:i])
-        chunks.append(frs)
+        frase1_chunks.append(frs)
         word_to_image(path=INPUT_PATH, filename=str(i), frase=frs, padding=2, wrap=True, size=(RETINA), fuente_size=12)
         
-def entrenar_memoria():
-    for i, p in enumerate(chunks):
+def entrenar_frase1(frase):
+    preprocesar_texto(frase)
+    
+    for i, l in enumerate(frase1_chunks):
         
         if i == 0:
             continue
         
+        RED1[i] = BAN()
+        print(f"Added BAN: {l}")
+                
         if i == 1:
-            ban1.train_from_(filename=f"{i}.png", label=p)
+            RED1[i].train_from_(filename=f"{i}.png", label=l)
+            print(f"Trained BAN: {l}")
+            continue
+        
 
-        if i == 2:
-            ban2.train_from_upstream_(filename=f"{i}.png", label=p, upstream=ban1)
-          
-        if i == 3:
-            ban3.train_from_upstream_(filename=f"{i}.png", label=p, upstream=[ban1, ban2])
+        red = list(RED1.values())[:-1]
+        
+        RED1[i].train_from_upstream_(filename=f"{i}.png", label=l, upstream=red)
 
         
+
     #ban1.summary()
     #ban1.memory_usage()
     #ban3.save("models/ban_v1.pkl")
+
+def detectar_frase():
+    red = list(RED1.values())
+    ultima_ban = red[-1]
+    
+    result = ultima_ban.classify_chained_("1.png",  upstream=red)
+    
+    print(result)
+
+
+
+entrenar_frase1(frase1)
+detectar_frase()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def reconstruir_frase(clasificacion):
     prefix, frases_scores = clasificacion
@@ -63,15 +92,3 @@ def reconstruir_frase(clasificacion):
         result.append(word)
 
     return result, " ".join(result)
-
-def detectar_frase():
-    result = ban3.classify_chained_("1.png",  upstream=[ban1, ban2, ban3])
-    
-    print(result)
-
-
-preprocesar_texto(frase)
-entrenar_memoria()
-detectar_frase()
-
-

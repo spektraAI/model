@@ -102,6 +102,47 @@ def clasificar_documento(imagen: str, verbose: bool = True):
 
     print(f"\n{'═'*55}")
     
+def memoria_documento():
+    print(f"\n{'═'*55}")
+    print(f"  MEMORIA TOTAL DEL DOCUMENTO")
+    print(f"{'═'*55}")
+
+    total_doc_mb = 0.0
+
+    for p_idx, red in REDES.items():
+        print(f"\n  PÁRRAFO {p_idx}")
+        print(f"  {'─'*50}")
+        print(f"  {'BAN':<8} {'W_fwd':>10} {'A_rows':>10} {'B_rows':>10} {'TOTAL':>10}")
+        print(f"  {'─'*50}")
+
+        total_parrafo_mb = 0.0
+
+        for i, ban in red.items():
+            report = ban.memory_usage()
+
+            # extraer valores numéricos del reporte
+            w     = float(report["W_fwd"].replace(" MB", ""))
+            a     = float(report["_A_rows"].replace(" MB", ""))
+            b     = float(report["_B_rows"].replace(" MB", ""))
+            total = float(report["TOTAL"].replace(" MB", ""))
+
+            total_parrafo_mb += total
+
+            print(f"  BAN{i:<5} {w:>9.3f}MB {a:>9.3f}MB {b:>9.3f}MB {total:>9.3f}MB")
+
+        print(f"  {'─'*50}")
+        print(f"  {'SUBTOTAL':<8} {'':>10} {'':>10} {'':>10} {total_parrafo_mb:>9.3f}MB")
+
+        total_doc_mb += total_parrafo_mb
+
+    print(f"\n{'═'*55}")
+    print(f"  PÁRRAFOS   : {len(REDES)}")
+    print(f"  BANS TOTAL : {sum(len(r) for r in REDES.values())}")
+    print(f"  {'─'*40}")
+    print(f"  TOTAL DOC  : {total_doc_mb:.3f} MB")
+    print(f"{'═'*55}\n")
+
+    return total_doc_mb
 
 entrenar_documento()
 print(REDES)
@@ -110,6 +151,6 @@ clasificar_documento("2.png")
 
 
 
-
+#memoria_documento()
 
     

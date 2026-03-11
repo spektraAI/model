@@ -54,9 +54,11 @@ def entrenar_frase1():
 def detectar_frase():
     red = list(RED1.values())
     ultima_ban = red[-1]
+    ultima_ban.summary()
+    ultima_ban.memory_usage()
     
-    result = ultima_ban.classify_chained_("2.png",  upstream=red)
-    print(result)
+    winner, scores, intermediate_scores = ultima_ban.classify_chained_("2.png",  upstream=red)
+    #print(result)
     
 
 
@@ -74,8 +76,7 @@ detectar_frase()
 
 
 
-    #ban1.summary()
-    #ban1.memory_usage()
+
     #ban3.save("models/ban_v1.pkl")
 
 

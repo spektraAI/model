@@ -37,8 +37,8 @@ def word_to_image(
     # ── Opciones de estilo ──────────────────────────────────────
     fuente_path: str | None = None,          # ruta a un .ttf/.otf
     fuente_size: int = 16,
-    color_texto: str | tuple = "black",
-    color_fondo: str | tuple = "white",
+    color_texto: str | tuple = "white",
+    color_fondo: str | tuple = "black",
 ) -> Path:
     """
     Genera una imagen que contiene `frase` y la guarda en `path/filename`.

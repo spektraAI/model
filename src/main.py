@@ -1,7 +1,7 @@
 from pathlib import Path
 from src.neuron.memory import PlasticBAN
 from src.utils import word_to_image
-from collections import Counter
+from src.utils.build_phrase import reconstruir_frase
 
 ruta_actual = Path.cwd()
 
@@ -36,33 +36,16 @@ def preprocesar_texto(frase):
 def entrenar_memoria():
     for i, p in enumerate(chunks):
         ban.train_from_(filename=f"{i}.png", label=p)
-        ban.reinforce_(filename=f"{i}.png", label=p, repetitions=1)
+        #ban.reinforce_(filename=f"{i}.png", label=p, repetitions=1)
 
-    ban.summary()
-    ban.memory_usage()
     ban.save("models/ban_v1.pkl")
-
-def reconstruir_frase(clasificacion):
-    prefix, frases_scores = clasificacion
-    # add temperature
-    # obtener frases válidas
-    sentences = [s for s in frases_scores.keys() if s.strip()]
-
-    split_sentences = [s.split() for s in sentences]
-    max_len = max(len(s) for s in split_sentences)
-
-    result = []
-
-    for i in range(max_len):
-        words = [s[i] for s in split_sentences if len(s) > i]
-        word = Counter(words).most_common(1)[0][0]
-        result.append(word)
-
-    return result, " ".join(result)
 
 def detectar_frase():
     ban = PlasticBAN.load("models/ban_v1.pkl")
+    ban.summary()
     ban.memory_usage()
+    ban.plasticity_report()
+    print(ban.synaptic_snapshot())
     
     result = ban.classify_("3.png")
     words, sentence = reconstruir_frase(result)
@@ -70,11 +53,9 @@ def detectar_frase():
 
 
 preprocesar_texto(frase)
-entrenar_memoria()
+#entrenar_memoria()
 detectar_frase()
 
 
 
-ban.summary()
-ban.plasticity_report()
-print(ban.synaptic_snapshot())
+

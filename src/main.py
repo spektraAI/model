@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.neuron.memory import BAN
+from src.neuron.memory import PlasticBAN
 from src.utils import word_to_image
 from collections import Counter
 
@@ -8,8 +8,15 @@ ruta_actual = Path.cwd()
 INPUT_PATH = ruta_actual / "input"
 OUTPUT_PATH = ruta_actual / "output"
 
-
-ban = BAN()
+ban = PlasticBAN(
+        ltp_rate        = 0.01,
+        ltd_rate        = 0.005,
+        decay           = 0.0005,
+        fatigue_k       = 0.05,
+        fatigue_recovery= 0.995,
+        radius          = 0.20,
+        consolidation_k = 0.05,
+    )
 
 frase = "a car is a road vehicle that is powered by an engine and is able to carry a small number of people."
 chunks = []
@@ -29,7 +36,8 @@ def preprocesar_texto(frase):
 def entrenar_memoria():
     for i, p in enumerate(chunks):
         ban.train_from_(filename=f"{i}.png", label=p)
-        
+        ban.reinforce_(filename=f"{i}.png", label=p, repetitions=1)
+
     ban.summary()
     ban.memory_usage()
     ban.save("models/ban_v1.pkl")
@@ -53,7 +61,7 @@ def reconstruir_frase(clasificacion):
     return result, " ".join(result)
 
 def detectar_frase():
-    ban = BAN.load("models/ban_v1.pkl")
+    ban = PlasticBAN.load("models/ban_v1.pkl")
     ban.memory_usage()
     
     result = ban.classify_("3.png")
@@ -67,3 +75,6 @@ detectar_frase()
 
 
 
+ban.summary()
+ban.plasticity_report()
+print(ban.synaptic_snapshot())
